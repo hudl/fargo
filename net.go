@@ -2,6 +2,7 @@ package eurekago
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -11,6 +12,7 @@ func getJson(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", "application/json")
 
 	// Send the request via a client
 	client := &http.Client{}
@@ -28,5 +30,14 @@ func getJson(url string) ([]byte, error) {
 }
 
 func (e *EurekaConnection) GetApps() *EurekaApps {
+	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
+	println(url)
+	out, err := getJson(url)
+	if err != nil {
+		println("Couldn't get JSON.", err.Error())
+	}
+	println(string(out))
+	var v interface{}
+	json.Unmarshal(out, &v)
 	return &EurekaApps{}
 }
