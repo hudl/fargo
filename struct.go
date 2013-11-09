@@ -23,57 +23,74 @@ func NewConn(proto, address, port string) (c EurekaConnection) {
 	return c
 }
 
-type EurekaApps struct {
-	App EurekaApp `json:"application"`
+type GetAppsResponse struct {
+	VersionDelta int           `xml:"versions__delta"`
+	AppsHashCode string        `xml:"apps__hashcode"`
+	Applications []Application `xml:"application"`
 }
 
-type EurekaApp struct {
-	Name            string `json:"name"`
-	EurekaInstances `json:"instance"`
+type Application struct {
+	Name      string     `xml:"name"`
+	Instances []Instance `xml:"instance"`
 }
 
-type EurekaInstances struct {
-	Instance EurekaInstance `json:"instance"`
+type StatusType string
+
+const (
+	UP       StatusType = "UP"
+	DOWN     StatusType = "DOWN"
+	STARTING StatusType = "STARTING"
+)
+
+type DcNameType string
+
+const (
+	Amazon DcNameType = "Amazon"
+	MyOwn  DcNameType = "MyOwn"
+)
+
+type Instance struct {
+	HostName         string          `xml:"hostName"`
+	App              string          `xml:"app"`
+	IpAddr           string          `xml:"ipAddr"`
+	VipAddress       string          `xml:"vipAddress"`
+	SecureVipAddress string          `xml:"secureVipAddress"`
+	Status           StatusType      `xml:"status"`
+	Port             int             `xml:"port"`
+	SecurePort       int             `xml:"securePort"`
+	DataCenterInfo   DataCenterInfo  `xml:"dataCenterInfo"`
+	LeaseInfo        LeaseInfo       `xml:"leaseInfo"`
+	Metadata         AppMetadataType `xml:"appMetadataType"`
 }
 
-type EurekaInstance struct {
-	LastUpdatedTimestamp          int64                  `json:"lastUpdatedTimestamp"`
-	LastDirtyTimestamp            int64                  `json:"lastDirtyTimestamp"`
-	CountryId                     int16                  `json:"countryId"`
-	SecurePort                    EurekaPort             `json:"securePort"`
-	Port                          EurekaPort             `json:"port"`
-	Status                        string                 `json:"status"`
-	IpAddr                        string                 `json:"ipAddr"`
-	VipAddr                       string                 `json:"vipAddress"`
-	App                           string                 `json:"app"`
-	HostName                      string                 `json:"hostName"`
-	DataCenterInfo                EurekaDataCenter       `json:"dataCenterInfo"`
-	LeaseInfo                     EurekaLease            `json:"leaseInfo"`
-	Metadata                      EurekaInstanceMetadata `json:"metadata"`
-	HomePageUrl                   string                 `json:"homePageUrl"`
-	StatusPageUrl                 string                 `json:"statusPageUrl"`
-	HealthCheckUrl                string                 `json:"healthCheckUrl"`
-	IsCoordinatingDiscoveryServer string                 `json:"isCoordinatingDiscoveryServer"`
+type AppMetadataType map[string]interface{}
+
+type AmazonMetadataType struct {
+	// <xsd:complexType name="amazonMetdataType">
+	// from http://docs.amazonwebservices.com/AWSEC2/latest/DeveloperGuide/index.html?AESDG-chapter-instancedata.html
+	AmiLaunchIndex   string `xml:"ami-launch-index"`
+	LocalHostname    string `xml:"local-hostname"`
+	AvailabilityZone string `xml:"availability-zone"`
+	InstanceId       string `xml:"instance-id"`
+	PublicIpv4       string `xml:"public-ipv4"`
+	PublicHostname   string `xml:"public-hostname"`
+	AmiManifestPath  string `xml:"ami-manifest-path"`
+	LocalIpv4        string `xml:"local-ipv4"`
+	HostName         string `xml:"hostname"`
+	AmiId            string `xml:"ami-id"`
+	InstanceType     string `xml:"instance-type"`
 }
 
-type EurekaInstanceMetadata struct{}
-
-type EurekaDataCenter struct {
-	Name  string `json:"name"`
-	Class string `json:"@class"`
+type DataCenterInfo struct {
+	Name     string             `xml:"name"`
+	Metadata AmazonMetadataType `xml:"metadata"`
 }
 
-type EurekaLease struct {
-	ServiceUpTimestamp    int64 `json:"serviceUpTimestamp"`
-	EvictionTimestamp     int64 `json:"evictionTimestamp"`
-	LastRenewalTimestamp  int64 `json:"lastRenewalTimestamp"`
-	RegistrationTimestamp int64 `json:"registrationTimestamp"`
-	DurationInSecs        int   `json:"durationInSecs"`
-	RenewalIntervalInSecs int   `json:"renewalIntervalInSecs"`
+type LeaseInfo struct {
+	RenewalIntervalInSecs int32 `xml:"renewalIntervalInSecs"`
+	DurationInSecs        int32 `xml:"durationInSecs"`
+	RegistrationTimestamp int64 `xml:"registrationTimestamp"`
+	LastRenewalTimestamp  int64 `xml:"lastRenewalTimestamp"`
+	EvictionTimestamp     int32 `xml:"evictionTimestamp"`
+	ServiceUpTimestamp    int64 `xml:"serviceUpTimestamp"`
 }
-type EurekaPort struct {
-	Port    string `json:"$"`
-	Enabled bool   `json:"@enabled"`
-}
-type EurekaVipAddr struct{}
-type EurekaSVipAddr struct{}

@@ -1,18 +1,18 @@
 package eurekago
 
 import (
-	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 )
 
-func getJson(url string) ([]byte, error) {
+func getXml(url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", "application/xml")
 
 	// Send the request via a client
 	client := &http.Client{}
@@ -29,15 +29,18 @@ func getJson(url string) ([]byte, error) {
 	return body, nil
 }
 
-func (e *EurekaConnection) GetApps() *EurekaApps {
+func (e *EurekaConnection) GetApps() {
 	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
-	println(url)
-	out, err := getJson(url)
+	out, err := getXml(url)
 	if err != nil {
-		println("Couldn't get JSON.", err.Error())
+		println("Couldn't get XML.", err.Error())
 	}
-	println(string(out))
-	var v interface{}
-	json.Unmarshal(out, &v)
-	return &EurekaApps{}
+	fmt.Println(string(out))
+	var v GetAppsResponse
+	err = xml.Unmarshal(out, &v)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(v)
+	fmt.Println(v.Applications[0].Instances[0].LeaseInfo)
 }
