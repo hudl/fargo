@@ -42,28 +42,27 @@ const (
 	STARTING StatusType = "STARTING"
 )
 
-type DcNameType string
-
 const (
-	Amazon DcNameType = "Amazon"
-	MyOwn  DcNameType = "MyOwn"
+	Amazon = "Amazon"
+	MyOwn  = "MyOwn"
 )
 
 type Instance struct {
-	HostName         string          `xml:"hostName"`
-	App              string          `xml:"app"`
-	IpAddr           string          `xml:"ipAddr"`
-	VipAddress       string          `xml:"vipAddress"`
-	SecureVipAddress string          `xml:"secureVipAddress"`
-	Status           StatusType      `xml:"status"`
-	Port             int             `xml:"port"`
-	SecurePort       int             `xml:"securePort"`
-	DataCenterInfo   DataCenterInfo  `xml:"dataCenterInfo"`
-	LeaseInfo        LeaseInfo       `xml:"leaseInfo"`
-	Metadata         AppMetadataType `xml:"appMetadataType"`
+	XMLName          struct{}       `xml:"instance"`
+	HostName         string         `xml:"hostName"`
+	App              string         `xml:"app"`
+	IpAddr           string         `xml:"ipAddr"`
+	VipAddress       string         `xml:"vipAddress"`
+	SecureVipAddress string         `xml:"secureVipAddress"`
+	Status           StatusType     `xml:"status"`
+	Port             int            `xml:"port"`
+	SecurePort       int            `xml:"securePort"`
+	DataCenterInfo   DataCenterInfo `xml:"dataCenterInfo"`
+	LeaseInfo        LeaseInfo      `xml:"leaseInfo"`
+	//Metadata         AppMetadataType `xml:"appMetadataType"`
 }
 
-type AppMetadataType map[string]interface{}
+type AppMetadataType map[string]string
 
 type AmazonMetadataType struct {
 	// <xsd:complexType name="amazonMetdataType">

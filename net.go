@@ -3,6 +3,7 @@ package eugo
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -52,17 +53,37 @@ func reqXml(req *http.Request) ([]byte, int, error) {
 	return body, resp.StatusCode, nil
 }
 
-func (e *EurekaConnection) GetApps() map[string]Application {
+func (e *EurekaConnection) GetApp(name string) (Application, error) {
+	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, name)
+	out, rcode, err := getXml(url)
+	if err != nil {
+		fmt.Println("Couldn't get XML.", err.Error())
+		return Application{}, err
+	}
+	var v Application
+	err = xml.Unmarshal(out, &v)
+	if err != nil {
+		fmt.Println("Unmarshalling error", err.Error())
+		return Application{}, err
+	}
+	if rcode > 299 || rcode < 200 {
+		fmt.Println("Non-200 rcode of " + string(rcode))
+	}
+	return v, nil
+}
+
+func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
 	out, rcode, err := getXml(url)
 	if err != nil {
-		println("Couldn't get XML.", err.Error())
+		fmt.Println("Couldn't get XML.", err.Error())
+		return nil, err
 	}
-	fmt.Println(string(out))
 	var v GetAppsResponse
 	err = xml.Unmarshal(out, &v)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Unmarshalling error", err.Error())
+		return nil, err
 	}
 	apps := map[string]Application{}
 	for _, app := range v.Applications {
@@ -71,12 +92,11 @@ func (e *EurekaConnection) GetApps() map[string]Application {
 	if rcode > 299 || rcode < 200 {
 		fmt.Println("Non-200 rcode of " + string(rcode))
 	}
-	return apps
+	return apps, nil
 }
 
 func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
-	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
-
+	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App)
 	_, rcode, err := getXml(url + "/" + ins.HostName)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -84,25 +104,51 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	}
 	if rcode == 200 {
 		fmt.Println("Instance exists. NOOP")
+		return nil
 	} else {
 		fmt.Println("Instance not yet registered. Registering.")
 	}
 
 	out, err := xml.Marshal(ins)
 	if err != nil {
-		fmt.Println(err.Error())
+		// marshal the xml *with* indents so it's readable if there's an error
+		out, _ := xml.MarshalIndent(ins, "", "    ")
+		fmt.Println(out, err.Error())
 		return err
 	}
-	_, rcode, err = postXml(url, out)
+	fmt.Println(string(out))
+	fmt.Println(url)
+	body, rcode, err := postXml(url, out)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
 	if rcode != 204 {
-		fmt.Println("HTTP returned " + string(rcode) + " possible failure creating instance")
+		fmt.Printf("HTTP returned %d possible failure creating instance\n", rcode)
+		fmt.Println(string(body))
+		return errors.New(fmt.Sprintf("HTTP returned %d possible failure creating instance\n", rcode))
 	}
 
-	body, rcode, err := getXml(url + "/" + ins.HostName)
+	body, rcode, err = getXml(url + "/" + ins.HostName)
 	xml.Unmarshal(body, ins)
+	return nil
+}
+
+func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
+	url := fmt.Sprintf("%s://%s:%s/%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App, ins.HostName)
+	fmt.Println(url)
+	req, err := http.NewRequest("PUT", url, nil)
+	if err != nil {
+		fmt.Println()
+		return err
+	}
+	_, rcode, err := reqXml(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	if rcode != 200 {
+		return errors.New(fmt.Sprintf("Error, heartbeat returned code %d\n", rcode))
+	}
 	return nil
 }
