@@ -1,7 +1,7 @@
-package eurekago_test
+package eugo_test
 
 import (
-	. "github.com/ryansb/eureka-go"
+	. "github.com/ryansb/eugo"
 	. "launchpad.net/gocheck"
 )
 

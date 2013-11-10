@@ -1,4 +1,4 @@
-package eurekago
+package eugo
 
 import (
 	"bytes"
