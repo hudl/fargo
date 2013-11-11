@@ -1,4 +1,4 @@
-package eugo
+package fargo
 
 type EurekaUrls struct {
 	Apps      string

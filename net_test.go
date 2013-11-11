@@ -1,7 +1,7 @@
-package eugo_test
+package fargo_test
 
 import (
-	"github.com/ryansb/eugo"
+	"github.com/ryansb/fargo"
 	. "launchpad.net/gocheck"
 	"testing"
 )
@@ -13,46 +13,46 @@ type S struct{}
 var _ = Suite(&S{})
 
 func (s *S) TestGetAllApps(c *C) {
-	e := eugo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http", "127.0.0.1", "8080")
 	a, _ := e.GetApps()
 	c.Assert(a["EUREKA"].Instances[0].HostName, Equals, "localhost.localdomain")
 	c.Assert(a["EUREKA"].Instances[0].IpAddr, Equals, "127.0.0.1")
 }
 
 func (s *S) TestGetAppInstances(c *C) {
-	e := eugo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http", "127.0.0.1", "8080")
 	a, _ := e.GetApp("EUREKA")
 	c.Assert(a.Instances[0].HostName, Equals, "localhost.localdomain")
 	c.Assert(a.Instances[0].IpAddr, Equals, "127.0.0.1")
 }
 
 func (s *S) TestRegisterFakeInstance(c *C) {
-	e := eugo.NewConn("http", "127.0.0.1", "8080")
-	i := eugo.Instance{
+	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
 		App:              "TESTAPP",
 		IpAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
-		DataCenterInfo:   eugo.DataCenterInfo{Name: eugo.MyOwn},
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
 		SecureVipAddress: "127.0.0.10",
-		Status:           eugo.UP,
+		Status:           fargo.UP,
 	}
 	err := e.RegisterInstance(&i)
 	c.Assert(err, IsNil)
 }
 
 func (s *S) TestCheckin(c *C) {
-	e := eugo.NewConn("http", "127.0.0.1", "8080")
-	i := eugo.Instance{
+	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
 		App:              "TESTAPP",
 		IpAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
-		DataCenterInfo:   eugo.DataCenterInfo{Name: eugo.MyOwn},
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
 		SecureVipAddress: "127.0.0.10",
-		Status:           eugo.UP,
+		Status:           fargo.UP,
 	}
 	err := e.HeartBeatInstance(&i)
 	c.Assert(err, IsNil)

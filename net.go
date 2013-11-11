@@ -1,4 +1,4 @@
-package eugo
+package fargo
 
 import (
 	"bytes"
