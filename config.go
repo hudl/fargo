@@ -50,12 +50,12 @@ type aws struct {
 
 type eureka struct {
 	InTheCloud            bool     // default false
-	ConnectTimeoutSeconds int32    // default 10s
+	ConnectTimeoutSeconds int      // default 10s
 	UseDnsForServiceUrls  bool     // default false
 	ServerDnsName         string   // default ""
 	ServiceUrls           []string // default []
-	ServerPort            int32    // default 7001
-	PollIntervalSeconds   int32    // default 30
+	ServerPort            int      // default 7001
+	PollIntervalSeconds   int      // default 30
 	EnableDelta           bool     // TODO: Support querying for deltas
 	PreferSameZone        bool     // default false
 	RegisterWithEureka    bool     // default false

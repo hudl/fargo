@@ -29,11 +29,21 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/pmylund/go-cache"
 	"net/http"
+	"time"
 )
+
+// expire cached items after 30 seconds, cleanup every 10
+var eurekaCache = cache.New(30*time.Second, 10*time.Second)
 
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	url := fmt.Sprintf("%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], name)
+	cached_app, found := eurekaCache.Get(url)
+	if found {
+		log.Notice("Got %s from cache", url)
+		return cached_app.(Application), nil
+	}
 	log.Debug("Getting app %s from url %s", name, url)
 	out, rcode, err := getXml(url)
 	if err != nil {
@@ -49,11 +59,17 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	if rcode > 299 || rcode < 200 {
 		log.Warning("Non-200 rcode of %d", rcode)
 	}
+	eurekaCache.Set(url, v, 0)
 	return v, nil
 }
 
 func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 	url := fmt.Sprintf("%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"])
+	cached_apps, found := eurekaCache.Get(url)
+	if found {
+		log.Notice("Got %s from cache", url)
+		return cached_apps.(map[string]Application), nil
+	}
 	log.Debug("Getting all apps from url %s", url)
 	out, rcode, err := getXml(url)
 	if err != nil {
@@ -73,6 +89,7 @@ func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 	if rcode > 299 || rcode < 200 {
 		log.Warning("Non-200 rcode of %d", rcode)
 	}
+	eurekaCache.Set(url, apps, 0)
 	return apps, nil
 }
 

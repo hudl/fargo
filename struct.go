@@ -36,8 +36,8 @@ var EurekaUrlSlugs = map[string]string{
 
 type EurekaConnection struct {
 	ServiceUrls    []string
-	Timeout        int32
-	PollInterval   int32
+	Timeout        int
+	PollInterval   int
 	PreferSameZone bool
 }
 
