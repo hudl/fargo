@@ -28,14 +28,7 @@ package fargo_test
 import (
 	"github.com/ryansb/fargo"
 	. "launchpad.net/gocheck"
-	"testing"
 )
-
-func Test(t *testing.T) { TestingT(t) }
-
-type S struct{}
-
-var _ = Suite(&S{})
 
 func (s *S) TestGetAllApps(c *C) {
 	e := fargo.NewConn("http", "127.0.0.1", "8080")
