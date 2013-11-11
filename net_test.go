@@ -26,26 +26,26 @@ package fargo_test
  */
 
 import (
-	"github.com/ryansb/fargo"
+	"github.com/hudl/fargo"
 	. "launchpad.net/gocheck"
 )
 
 func (s *S) TestGetAllApps(c *C) {
-	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http://127.0.0.1:8080")
 	a, _ := e.GetApps()
 	c.Assert(a["EUREKA"].Instances[0].HostName, Equals, "localhost.localdomain")
 	c.Assert(a["EUREKA"].Instances[0].IpAddr, Equals, "127.0.0.1")
 }
 
 func (s *S) TestGetAppInstances(c *C) {
-	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http://127.0.0.1:8080")
 	a, _ := e.GetApp("EUREKA")
 	c.Assert(a.Instances[0].HostName, Equals, "localhost.localdomain")
 	c.Assert(a.Instances[0].IpAddr, Equals, "127.0.0.1")
 }
 
 func (s *S) TestRegisterFakeInstance(c *C) {
-	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http://127.0.0.1:8080")
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
@@ -61,7 +61,7 @@ func (s *S) TestRegisterFakeInstance(c *C) {
 }
 
 func (s *S) TestCheckin(c *C) {
-	e := fargo.NewConn("http", "127.0.0.1", "8080")
+	e := fargo.NewConn("http://127.0.0.1:8080")
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,

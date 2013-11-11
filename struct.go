@@ -25,26 +25,43 @@ package fargo
  * IN THE SOFTWARE.
  */
 
-type EurekaUrls struct {
-	Apps      string
-	Instances string
+import (
+	"math/rand"
+)
+
+var EurekaUrlSlugs = map[string]string{
+	"Apps":      "eureka/v2/apps",
+	"Instances": "eureka/v2/instances",
 }
 
 type EurekaConnection struct {
-	Port    string
-	Address string
-	Proto   string // either http or https
-	Urls    EurekaUrls
+	ServiceUrls    []string
+	Timeout        int32
+	PollInterval   int32
+	PreferSameZone bool
 }
 
-func NewConn(proto, address, port string) (c EurekaConnection) {
-	c.Proto = proto
-	c.Address = address
-	c.Port = port
-	c.Urls = EurekaUrls{
-		Apps:      "eureka/v2/apps",
-		Instances: "eureka/v2/instances",
+func (e *EurekaConnection) SelectServiceUrl() string {
+	return e.ServiceUrls[rand.Int31n(int32(len(e.ServiceUrls)))]
+}
+
+func NewConnFromConfig(conf Config) (c EurekaConnection) {
+	if conf.Eureka.UseDnsForServiceUrls {
+		//TODO: Read service urls from DNS TXT records
+		log.Critical("UseDnsForServiceUrls option unsupported. Bailing out.")
 	}
+	c.ServiceUrls = conf.Eureka.ServiceUrls
+	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDnsName) > 0 {
+		c.ServiceUrls = []string{conf.Eureka.ServerDnsName}
+	}
+	c.Timeout = conf.Eureka.ConnectTimeoutSeconds
+	c.PollInterval = conf.Eureka.PollIntervalSeconds
+	c.PreferSameZone = conf.Eureka.PreferSameZone
+	return c
+}
+
+func NewConn(address ...string) (c EurekaConnection) {
+	c.ServiceUrls = address
 	return c
 }
 

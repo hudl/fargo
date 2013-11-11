@@ -84,7 +84,7 @@ func reqXml(req *http.Request) ([]byte, int, error) {
 }
 
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
-	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, name)
+	url := fmt.Sprintf("%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], name)
 	log.Debug("Getting app %s from url %s", name, url)
 	out, rcode, err := getXml(url)
 	if err != nil {
@@ -104,7 +104,7 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 }
 
 func (e *EurekaConnection) GetApps() (map[string]Application, error) {
-	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
+	url := fmt.Sprintf("%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"])
 	log.Debug("Getting all apps from url %s", url)
 	out, rcode, err := getXml(url)
 	if err != nil {
@@ -128,7 +128,7 @@ func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 }
 
 func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
-	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App)
+	url := fmt.Sprintf("%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], ins.App)
 	log.Debug("Registering instance with url %s", url)
 	_, rcode, err := getXml(url + "/" + ins.HostName)
 	if err != nil {
@@ -166,7 +166,7 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 }
 
 func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
-	url := fmt.Sprintf("%s://%s:%s/%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App, ins.HostName)
+	url := fmt.Sprintf("%s/%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], ins.App, ins.HostName)
 	log.Debug("Sending heartbeat with url %s", url)
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
