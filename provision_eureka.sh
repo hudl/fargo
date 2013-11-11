@@ -19,10 +19,4 @@ cd /vagrant/eureka
 cp ./eureka-server/build/libs/eureka-server-1.1.118.war /var/lib/tomcat/webapps/eureka.war
 chmod a+x /var/lib/tomcat/webapps/eureka.war
 
-#cp /vagrant/eureka-server-1.1.120-SNAPSHOT.war /usr/share/tomcat/webapps/eureka.war
-#chown tomcat:tomcat /usr/share/tomcat/webapps/eureka.war
-#chmod a+x /usr/share/tomcat/webapps/eureka.war
-
 service tomcat restart
-
-#echo "Done restarting tomcat. Go go go."
