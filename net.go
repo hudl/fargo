@@ -12,10 +12,12 @@ import (
 func postXml(url string, reqBody []byte) ([]byte, int, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
 	if err != nil {
+		log.Error("Could not create POST %s with body %s Error: %s", url, string(reqBody), err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXml(req)
 	if err != nil {
+		log.Error("Could not complete POST %s with body %s Error: %s", url, string(reqBody), err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
@@ -24,10 +26,12 @@ func postXml(url string, reqBody []byte) ([]byte, int, error) {
 func getXml(url string) ([]byte, int, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		log.Error("Could not create POST %s with Error: %s", url, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXml(req)
 	if err != nil {
+		log.Error("Could not complete POST %s with Error: %s", url, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
@@ -47,6 +51,7 @@ func reqXml(req *http.Request) ([]byte, int, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Error("Failure reading request body Error: %s", err.Error())
 		return nil, -1, err
 	}
 	// At this point we're done and shit worked, simply return the bytes
@@ -55,34 +60,36 @@ func reqXml(req *http.Request) ([]byte, int, error) {
 
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, name)
+	log.Debug("Getting app %s from url %s", name, url)
 	out, rcode, err := getXml(url)
 	if err != nil {
-		fmt.Println("Couldn't get XML.", err.Error())
+		log.Error("Couldn't get XML. Error: %s", err.Error())
 		return Application{}, err
 	}
 	var v Application
 	err = xml.Unmarshal(out, &v)
 	if err != nil {
-		fmt.Println("Unmarshalling error", err.Error())
+		log.Error("Unmarshalling error. Error: %s", err.Error())
 		return Application{}, err
 	}
 	if rcode > 299 || rcode < 200 {
-		fmt.Println("Non-200 rcode of " + string(rcode))
+		log.Warning("Non-200 rcode of %d", rcode)
 	}
 	return v, nil
 }
 
 func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 	url := fmt.Sprintf("%s://%s:%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps)
+	log.Debug("Getting all apps from url %s", url)
 	out, rcode, err := getXml(url)
 	if err != nil {
-		fmt.Println("Couldn't get XML.", err.Error())
+		log.Error("Couldn't get XML.", err.Error())
 		return nil, err
 	}
 	var v GetAppsResponse
 	err = xml.Unmarshal(out, &v)
 	if err != nil {
-		fmt.Println("Unmarshalling error", err.Error())
+		log.Error("Unmarshalling error", err.Error())
 		return nil, err
 	}
 	apps := map[string]Application{}
@@ -90,42 +97,41 @@ func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 		apps[app.Name] = app
 	}
 	if rcode > 299 || rcode < 200 {
-		fmt.Println("Non-200 rcode of " + string(rcode))
+		log.Warning("Non-200 rcode of %d", rcode)
 	}
 	return apps, nil
 }
 
 func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	url := fmt.Sprintf("%s://%s:%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App)
+	log.Debug("Registering instance with url %s", url)
 	_, rcode, err := getXml(url + "/" + ins.HostName)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error("Failed check if Instance=%s exists in App=%s. Error=\"%s\"",
+			ins.HostName, ins.App, err.Error())
 		return err
 	}
 	if rcode == 200 {
-		fmt.Println("Instance exists. NOOP")
+		log.Notice("Instance=%s already exists in App=%s aborting registration", ins.HostName, ins.App)
 		return nil
 	} else {
-		fmt.Println("Instance not yet registered. Registering.")
+		log.Notice("Instance=%s not yet registered with App=%s. Registering.", ins.HostName, ins.App)
 	}
 
 	out, err := xml.Marshal(ins)
 	if err != nil {
 		// marshal the xml *with* indents so it's readable if there's an error
 		out, _ := xml.MarshalIndent(ins, "", "    ")
-		fmt.Println(out, err.Error())
+		log.Error("Error marshalling XML Instance=%s App=%s. Error:\"%s\" XML body=\"%s\"", err.Error(), ins.HostName, ins.App, string(out))
 		return err
 	}
-	fmt.Println(string(out))
-	fmt.Println(url)
 	body, rcode, err := postXml(url, out)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error("Could not complete registration Error: ", err.Error())
 		return err
 	}
 	if rcode != 204 {
-		fmt.Printf("HTTP returned %d possible failure creating instance\n", rcode)
-		fmt.Println(string(body))
+		log.Warning("HTTP returned %d registering Instance=%s App=%s Body=\"%s\"", rcode, ins.HostName, ins.App, string(body))
 		return errors.New(fmt.Sprintf("HTTP returned %d possible failure creating instance\n", rcode))
 	}
 
@@ -136,18 +142,19 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 
 func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 	url := fmt.Sprintf("%s://%s:%s/%s/%s/%s", e.Proto, e.Address, e.Port, e.Urls.Apps, ins.App, ins.HostName)
-	fmt.Println(url)
+	log.Debug("Sending heartbeat with url %s", url)
 	req, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
-		fmt.Println()
+		log.Error("Could not create request for heartbeat. Error: %s", err.Error())
 		return err
 	}
 	_, rcode, err := reqXml(req)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error("Error sending heartbeat for Instance=%s App=%s error: %s", ins.HostName, ins.App, err.Error())
 		return err
 	}
 	if rcode != 200 {
+		log.Error("Sending heartbeat for Instance=%s App=%s returned code %d\n", ins.HostName, ins.App, rcode)
 		return errors.New(fmt.Sprintf("Error, heartbeat returned code %d\n", rcode))
 	}
 	return nil
