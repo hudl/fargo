@@ -1,0 +1,4 @@
+[Eureka]
+ServiceUrls = things
+ServiceUrls = stuff
+ConnectTimeoutSeconds = 2
