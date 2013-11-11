@@ -26,62 +26,11 @@ package fargo
  */
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 )
-
-func postXml(url string, reqBody []byte) ([]byte, int, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
-	if err != nil {
-		log.Error("Could not create POST %s with body %s Error: %s", url, string(reqBody), err.Error())
-		return nil, -1, err
-	}
-	body, rcode, err := reqXml(req)
-	if err != nil {
-		log.Error("Could not complete POST %s with body %s Error: %s", url, string(reqBody), err.Error())
-		return nil, rcode, err
-	}
-	return body, rcode, nil
-}
-
-func getXml(url string) ([]byte, int, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Error("Could not create POST %s with Error: %s", url, err.Error())
-		return nil, -1, err
-	}
-	body, rcode, err := reqXml(req)
-	if err != nil {
-		log.Error("Could not complete POST %s with Error: %s", url, err.Error())
-		return nil, rcode, err
-	}
-	return body, rcode, nil
-}
-
-func reqXml(req *http.Request) ([]byte, int, error) {
-
-	req.Header.Set("Content-Type", "application/xml")
-	req.Header.Set("Accept", "application/xml")
-
-	// Send the request via a client
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, -1, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Error("Failure reading request body Error: %s", err.Error())
-		return nil, -1, err
-	}
-	// At this point we're done and shit worked, simply return the bytes
-	return body, resp.StatusCode, nil
-}
 
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	url := fmt.Sprintf("%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], name)
