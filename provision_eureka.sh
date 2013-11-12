@@ -14,8 +14,13 @@ echo "<?xml version='1.0' encoding='utf-8'?>
 chown tomcat:tomcat /etc/tomcat/tomcat-users.xml
 chmod 644 /etc/tomcat/tomcat-users.xml
 
+echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+172.16.0.11 node1 node1.localdomain
+172.16.0.22 node2 node2.localdomain
+" > /etc/hosts
+
 cd /vagrant/eureka
-./gradlew clean build
+#./gradlew clean build
 cp ./eureka-server/build/libs/eureka-server-1.1.118.war /var/lib/tomcat/webapps/eureka.war
 chmod a+x /var/lib/tomcat/webapps/eureka.war
 
