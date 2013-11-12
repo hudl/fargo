@@ -7,6 +7,37 @@ c = fargo.NewConn("http", "127.0.0.1", "8080")
 c.GetApps() // returns a map[String]fargo.Application
 ```
 
+# FAQ
+
+Q: Is this a full client?
+
+A: Not yet. It's very much a work in progress, and it's also being built with
+consideration for Go idioms, which means some Java-isms will never be included.
+
+Q: Does it cache?
+
+A: Yes. There is a shared cache that is checked before calling out to Eureka
+servers.
+
+Q: Can I integrate this into my Go app and have it manage hearbeats to Eureka?
+
+A: Glad you asked, of course you can. Just grab an application (for this example,
+"TESTAPP")
+
+```go
+e, _ := fargo.NewConnFromConfigFile("/etc/fargo.gcfg")
+app, _ := e.GetApp("TESTAPP")
+// starts a goroutine that updates the application on poll interval
+e.UpdateApp(&app)
+```
+
+# TODO
+
+* Actually do something with AWS availability zone info
+* Allow service url distribution via DNS
+* Currently the load balancing is random, and does not give preference to
+  servers within a zone.
+
 # Hacking
 
 ## Just Let Me Import Already
@@ -22,7 +53,8 @@ import (
 )
 
 func main() {
-    e := fargo.NewConn()
+    e, _ := fargo.NewConnFromConfigFile("/etc/fargo.gcfg")
+    e.AppWatchChannel
 }
 
 ```

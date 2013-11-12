@@ -30,15 +30,29 @@ import (
 	"time"
 )
 
+func (e *EurekaConnection) UpdateApp(app *Application) {
+	go func() {
+		for {
+			log.Notice("Updating app %s", app.Name)
+			err := e.readAppInto(app.Name, app)
+			if err != nil {
+				log.Error("Failure updating %s in goroutine", app.Name)
+			}
+			<-time.After(time.Duration(e.PollInterval) * time.Second)
+		}
+	}()
+}
+
 func (e *EurekaConnection) AppWatchChannel(name string) (chan (*Application), chan (bool)) {
 	c := make(chan (*Application), 100)
 	kill := make(chan (bool))
 	go func() {
 		last_xml := ""
+		// we store the previously received XML for comparison with the new XML
 		for {
 			select {
 			case <-kill:
-				return
+				return // we have to allow the goroutine to be killed.
 			case <-time.After(time.Duration(e.PollInterval) * time.Second):
 				log.Debug("Polling again")
 				app, err := e.GetApp(name)

@@ -150,3 +150,23 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 	}
 	return nil
 }
+
+func (e *EurekaConnection) readAppInto(name string, app *Application) error {
+	//TODO: This should probably use the cache, but it's only called at PollInterval anyways
+	url := fmt.Sprintf("%s/%s/%s", e.SelectServiceUrl(), EurekaUrlSlugs["Apps"], name)
+	log.Debug("Getting app %s from url %s", name, url)
+	out, rcode, err := getXml(url)
+	if err != nil {
+		log.Error("Couldn't get XML. Error: %s", err.Error())
+		return err
+	}
+	err = xml.Unmarshal(out, app)
+	if err != nil {
+		log.Error("Unmarshalling error. Error: %s", err.Error())
+		return err
+	}
+	if rcode > 299 || rcode < 200 {
+		log.Warning("Non-200 rcode of %d", rcode)
+	}
+	return nil
+}
