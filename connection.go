@@ -27,6 +27,7 @@ package fargo
 
 import (
 	"math/rand"
+	"time"
 )
 
 // SelectServiceURL gets a eureka instance based on the connection's load
@@ -70,4 +71,19 @@ func NewConnFromConfig(conf Config) (c EurekaConnection) {
 func NewConn(address ...string) (c EurekaConnection) {
 	c.ServiceUrls = address
 	return c
+}
+
+// UpdateApp creates a goroutine that continues to keep an application updated
+// with its status in Eureka
+func (e *EurekaConnection) UpdateApp(app *Application) {
+	go func() {
+		for {
+			log.Notice("Updating app %s", app.Name)
+			err := e.readAppInto(app.Name, app)
+			if err != nil {
+				log.Error("Failure updating %s in goroutine", app.Name)
+			}
+			<-time.After(time.Duration(e.PollInterval) * time.Second)
+		}
+	}()
 }
