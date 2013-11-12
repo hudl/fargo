@@ -25,10 +25,21 @@ A: Glad you asked, of course you can. Just grab an application (for this example
 "TESTAPP")
 
 ```go
+// register a couple instances, and then set up to only heartbeat one of them
 e, _ := fargo.NewConnFromConfigFile("/etc/fargo.gcfg")
 app, _ := e.GetApp("TESTAPP")
 // starts a goroutine that updates the application on poll interval
 e.UpdateApp(&app)
+for {
+    for _, ins := range app.Instances {
+        fmt.Printf("%s, ", ins.HostName)
+    }
+    fmt.Println(len(app.Instances))
+    <-time.After(10 * time.Second)
+}
+// You'll see all the instances at first, and within a minute or two all the
+// ones that aren't heartbeating will disappear from the list. Note that after
+// calling `UpdateApp` there's no need to manually update
 ```
 
 # TODO
