@@ -82,3 +82,12 @@ func (s *S) TestCheckin(c *C) {
 	err := e.HeartBeatInstance(&i)
 	c.Assert(err, IsNil)
 }
+
+func (s *S) TestNewConnectionFromConfic(c *C) {
+	cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
+	c.Assert(err, IsNil)
+	e := fargo.NewConnFromConfig(cfg)
+	apps, err := e.GetApps()
+	c.Assert(err, IsNil)
+	c.Assert(len(apps["EUREKA"].Instances), Equals, 2)
+}

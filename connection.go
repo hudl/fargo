@@ -1,4 +1,4 @@
-package fargo_test
+package fargo
 
 /*
  * The MIT License (MIT)
@@ -26,32 +26,37 @@ package fargo_test
  */
 
 import (
-	"github.com/hudl/fargo"
-	. "launchpad.net/gocheck"
+	"math/rand"
 )
 
-func (s *S) TestConfigDefaults(c *C) {
-	conf, err := fargo.ReadConfig("./config_sample/blank.gcfg")
-	c.Check(err, IsNil)
-	c.Check(conf.Eureka.InTheCloud, Equals, false)
-	c.Check(conf.Eureka.ConnectTimeoutSeconds, Equals, 10)
-	c.Check(conf.Eureka.UseDnsForServiceUrls, Equals, false)
-	c.Check(conf.Eureka.ServerDnsName, Equals, "")
-	c.Check(len(conf.Eureka.ServiceUrls), Equals, 0)
-	c.Check(conf.Eureka.ServerPort, Equals, 7001)
-	c.Check(conf.Eureka.PollIntervalSeconds, Equals, 30)
-	c.Check(conf.Eureka.EnableDelta, Equals, false)
-	c.Check(conf.Eureka.PreferSameZone, Equals, false)
-	c.Check(conf.Eureka.RegisterWithEureka, Equals, false)
+func (e *EurekaConnection) SelectServiceUrl() string {
+	return e.ServiceUrls[rand.Int31n(int32(len(e.ServiceUrls)))]
 }
 
-func (s *S) TestLocalConfig(c *C) {
-	conf, err := fargo.ReadConfig("./config_sample/local.gcfg")
-	c.Check(err, IsNil)
-	c.Check(conf.Eureka.InTheCloud, Equals, false)
-	c.Check(conf.Eureka.ConnectTimeoutSeconds, Equals, 2)
-	c.Check(conf.Eureka.ServiceUrls, DeepEquals,
-		[]string{"http://172.16.0.11:8080/eureka/v2",
-			"http://172.16.0.22:8080/eureka/v2"})
-	c.Check(conf.Eureka.UseDnsForServiceUrls, Equals, false)
+func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
+	cfg, err := ReadConfig(location)
+	if err != nil {
+		log.Error("Problem reading config %s error: %s", location, err.Error())
+		return c, nil
+	}
+	return NewConnFromConfig(cfg), nil
+}
+func NewConnFromConfig(conf Config) (c EurekaConnection) {
+	if conf.Eureka.UseDnsForServiceUrls {
+		//TODO: Read service urls from DNS TXT records
+		log.Critical("ERROR: UseDnsForServiceUrls option unsupported.")
+	}
+	c.ServiceUrls = conf.Eureka.ServiceUrls
+	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDnsName) > 0 {
+		c.ServiceUrls = []string{conf.Eureka.ServerDnsName}
+	}
+	c.Timeout = conf.Eureka.ConnectTimeoutSeconds
+	c.PollInterval = conf.Eureka.PollIntervalSeconds
+	c.PreferSameZone = conf.Eureka.PreferSameZone
+	return c
+}
+
+func NewConn(address ...string) (c EurekaConnection) {
+	c.ServiceUrls = address
+	return c
 }

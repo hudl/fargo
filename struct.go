@@ -25,10 +25,6 @@ package fargo
  * IN THE SOFTWARE.
  */
 
-import (
-	"math/rand"
-)
-
 var EurekaUrlSlugs = map[string]string{
 	"Apps":      "eureka/v2/apps",
 	"Instances": "eureka/v2/instances",
@@ -39,30 +35,6 @@ type EurekaConnection struct {
 	Timeout        int
 	PollInterval   int
 	PreferSameZone bool
-}
-
-func (e *EurekaConnection) SelectServiceUrl() string {
-	return e.ServiceUrls[rand.Int31n(int32(len(e.ServiceUrls)))]
-}
-
-func NewConnFromConfig(conf Config) (c EurekaConnection) {
-	if conf.Eureka.UseDnsForServiceUrls {
-		//TODO: Read service urls from DNS TXT records
-		log.Critical("UseDnsForServiceUrls option unsupported. Bailing out.")
-	}
-	c.ServiceUrls = conf.Eureka.ServiceUrls
-	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDnsName) > 0 {
-		c.ServiceUrls = []string{conf.Eureka.ServerDnsName}
-	}
-	c.Timeout = conf.Eureka.ConnectTimeoutSeconds
-	c.PollInterval = conf.Eureka.PollIntervalSeconds
-	c.PreferSameZone = conf.Eureka.PreferSameZone
-	return c
-}
-
-func NewConn(address ...string) (c EurekaConnection) {
-	c.ServiceUrls = address
-	return c
 }
 
 type GetAppsResponse struct {
