@@ -31,13 +31,13 @@ import (
 	"net/http"
 )
 
-func postXml(url string, reqBody []byte) ([]byte, int, error) {
+func postXML(url string, reqBody []byte) ([]byte, int, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
 	if err != nil {
 		log.Error("Could not create POST %s with body %s Error: %s", url, string(reqBody), err.Error())
 		return nil, -1, err
 	}
-	body, rcode, err := reqXml(req)
+	body, rcode, err := reqXML(req)
 	if err != nil {
 		log.Error("Could not complete POST %s with body %s Error: %s", url, string(reqBody), err.Error())
 		return nil, rcode, err
@@ -45,13 +45,13 @@ func postXml(url string, reqBody []byte) ([]byte, int, error) {
 	return body, rcode, nil
 }
 
-func getXml(url string) ([]byte, int, error) {
+func getXML(url string) ([]byte, int, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Error("Could not create POST %s with Error: %s", url, err.Error())
 		return nil, -1, err
 	}
-	body, rcode, err := reqXml(req)
+	body, rcode, err := reqXML(req)
 	if err != nil {
 		log.Error("Could not complete POST %s with Error: %s", url, err.Error())
 		return nil, rcode, err
@@ -59,7 +59,7 @@ func getXml(url string) ([]byte, int, error) {
 	return body, rcode, nil
 }
 
-func reqXml(req *http.Request) ([]byte, int, error) {
+func reqXML(req *http.Request) ([]byte, int, error) {
 
 	req.Header.Set("Content-Type", "application/xml")
 	req.Header.Set("Accept", "application/xml")

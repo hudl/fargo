@@ -29,10 +29,15 @@ import (
 	"math/rand"
 )
 
-func (e *EurekaConnection) SelectServiceUrl() string {
+// SelectServiceURL gets a eureka instance based on the connection's load
+// balancing scheme.
+// TODO: Make this not just pick a random one.
+func (e *EurekaConnection) SelectServiceURL() string {
 	return e.ServiceUrls[rand.Int31n(int32(len(e.ServiceUrls)))]
 }
 
+// NewConnFromConfigFile sets up a connection object based on a config in
+// specified path
 func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 	cfg, err := ReadConfig(location)
 	if err != nil {
@@ -41,14 +46,17 @@ func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 	}
 	return NewConnFromConfig(cfg), nil
 }
+
+// NewConnFromConfig will, given a Config struct, return a connection based on
+// those options
 func NewConnFromConfig(conf Config) (c EurekaConnection) {
-	if conf.Eureka.UseDnsForServiceUrls {
+	if conf.Eureka.UseDNSForServiceUrls {
 		//TODO: Read service urls from DNS TXT records
-		log.Critical("ERROR: UseDnsForServiceUrls option unsupported.")
+		log.Critical("ERROR: UseDNSForServiceUrls option unsupported.")
 	}
 	c.ServiceUrls = conf.Eureka.ServiceUrls
-	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDnsName) > 0 {
-		c.ServiceUrls = []string{conf.Eureka.ServerDnsName}
+	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDNSName) > 0 {
+		c.ServiceUrls = []string{conf.Eureka.ServerDNSName}
 	}
 	c.Timeout = conf.Eureka.ConnectTimeoutSeconds
 	c.PollInterval = conf.Eureka.PollIntervalSeconds
@@ -56,6 +64,9 @@ func NewConnFromConfig(conf Config) (c EurekaConnection) {
 	return c
 }
 
+// NewConn is a default connection with just a list of ServiceUrls. Most basic
+// way to make a new connection. Generally only if you know what you're doing
+// and are going to do the configuration yourself some other way.
 func NewConn(address ...string) (c EurekaConnection) {
 	c.ServiceUrls = address
 	return c

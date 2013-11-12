@@ -35,8 +35,8 @@ func (s *S) TestConfigDefaults(c *C) {
 	c.Check(err, IsNil)
 	c.Check(conf.Eureka.InTheCloud, Equals, false)
 	c.Check(conf.Eureka.ConnectTimeoutSeconds, Equals, 10)
-	c.Check(conf.Eureka.UseDnsForServiceUrls, Equals, false)
-	c.Check(conf.Eureka.ServerDnsName, Equals, "")
+	c.Check(conf.Eureka.UseDNSForServiceUrls, Equals, false)
+	c.Check(conf.Eureka.ServerDNSName, Equals, "")
 	c.Check(len(conf.Eureka.ServiceUrls), Equals, 0)
 	c.Check(conf.Eureka.ServerPort, Equals, 7001)
 	c.Check(conf.Eureka.PollIntervalSeconds, Equals, 30)
@@ -53,5 +53,5 @@ func (s *S) TestLocalConfig(c *C) {
 	c.Check(conf.Eureka.ServiceUrls, DeepEquals,
 		[]string{"http://172.16.0.11:8080/eureka/v2",
 			"http://172.16.0.22:8080/eureka/v2"})
-	c.Check(conf.Eureka.UseDnsForServiceUrls, Equals, false)
+	c.Check(conf.Eureka.UseDNSForServiceUrls, Equals, false)
 }

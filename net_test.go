@@ -31,33 +31,33 @@ import (
 )
 
 func (s *S) TestGetAllApps(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080")
+	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 	a, _ := e.GetApps()
 	c.Assert(len(a["EUREKA"].Instances), Equals, 2)
 }
 
 func (s *S) TestGetAppInstances(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080")
+	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 	a, _ := e.GetApp("EUREKA")
 	c.Assert(len(a.Instances), Equals, 2)
 	for idx, ins := range a.Instances {
 		if ins.HostName == "node1.localdomain" {
-			c.Assert(a.Instances[idx].IpAddr, Equals, "172.16.0.11")
+			c.Assert(a.Instances[idx].IPAddr, Equals, "172.16.0.11")
 			c.Assert(a.Instances[idx].HostName, Equals, "node1.localdomain")
 		} else {
-			c.Assert(a.Instances[idx].IpAddr, Equals, "172.16.0.22")
+			c.Assert(a.Instances[idx].IPAddr, Equals, "172.16.0.22")
 			c.Assert(a.Instances[idx].HostName, Equals, "node2.localdomain")
 		}
 	}
 }
 
 func (s *S) TestRegisterFakeInstance(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080")
+	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
 		App:              "TESTAPP",
-		IpAddr:           "127.0.0.10",
+		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
 		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
 		SecureVipAddress: "127.0.0.10",
@@ -68,12 +68,12 @@ func (s *S) TestRegisterFakeInstance(c *C) {
 }
 
 func (s *S) TestCheckin(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080")
+	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
 		App:              "TESTAPP",
-		IpAddr:           "127.0.0.10",
+		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
 		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
 		SecureVipAddress: "127.0.0.10",

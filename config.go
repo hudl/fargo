@@ -29,13 +29,14 @@ import (
 	"code.google.com/p/gcfg"
 )
 
+// Config is a base struct to be read by code.google.com/p/gcfg
 type Config struct {
 	AWS    aws
 	Eureka eureka
 }
 
 type aws struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	// zones if running in AWS specifies as [us-east-1a, us-east-1b]
 	AvailabilityZones []string
@@ -51,8 +52,8 @@ type aws struct {
 type eureka struct {
 	InTheCloud            bool     // default false
 	ConnectTimeoutSeconds int      // default 10s
-	UseDnsForServiceUrls  bool     // default false
-	ServerDnsName         string   // default ""
+	UseDNSForServiceUrls  bool     // default false
+	ServerDNSName         string   // default ""
 	ServiceUrls           []string // default []
 	ServerPort            int      // default 7001
 	PollIntervalSeconds   int      // default 30
@@ -61,17 +62,19 @@ type eureka struct {
 	RegisterWithEureka    bool     // default false
 }
 
+// ReadConfig from a file location. Minimal error handling. Just bails and passes up
+// an error if the file isn't found
 func ReadConfig(loc string) (conf Config, err error) {
 	err = gcfg.ReadFileInto(&conf, loc)
 	if err != nil {
 		log.Critical("Unable to read config file Error: %s", err.Error())
 		return conf, err
 	}
-	conf.FillDefaults()
+	conf.fillDefaults()
 	return conf, nil
 }
 
-func (c *Config) FillDefaults() {
+func (c *Config) fillDefaults() {
 	// TODO: Read in current Availability Zone if in AWS (DC==Amazon)
 	if c.Eureka.ConnectTimeoutSeconds == 0 {
 		c.Eureka.ConnectTimeoutSeconds = 10
