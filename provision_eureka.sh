@@ -25,3 +25,4 @@ cp ./eureka-server/build/libs/eureka-server-1.1.118.war /var/lib/tomcat/webapps/
 chmod a+x /var/lib/tomcat/webapps/eureka.war
 
 service tomcat restart
+chkconfig tomcat on
