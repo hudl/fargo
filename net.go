@@ -50,6 +50,10 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 		log.Error("Couldn't get XML. Error: %s", err.Error())
 		return Application{}, err
 	}
+	if rcode == 404 {
+		log.Error("application %s not found (received 404)", name)
+		return Application{}, fmt.Errorf("application %s not found (received 404)", name)
+	}
 	var v Application
 	err = xml.Unmarshal(out, &v)
 	if err != nil {
@@ -165,8 +169,11 @@ func (e *EurekaConnection) readAppInto(name string, app *Application) error {
 		log.Error("Couldn't get XML. Error: %s", err.Error())
 		return err
 	}
+	oldInstances := app.Instances
+	app.Instances = []Instance{}
 	err = xml.Unmarshal(out, app)
 	if err != nil {
+		app.Instances = oldInstances
 		log.Error("Unmarshalling error. Error: %s", err.Error())
 		return err
 	}
