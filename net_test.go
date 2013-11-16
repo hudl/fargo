@@ -27,67 +27,72 @@ package fargo_test
 
 import (
 	"github.com/hudl/fargo"
-	. "launchpad.net/gocheck"
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
-func (s *S) TestGetAllApps(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
-	a, _ := e.GetApps()
-	c.Assert(len(a["EUREKA"].Instances), Equals, 2)
-}
-
-func (s *S) TestGetAppInstances(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
-	a, _ := e.GetApp("EUREKA")
-	c.Assert(len(a.Instances), Equals, 2)
-	for idx, ins := range a.Instances {
-		if ins.HostName == "node1.localdomain" {
-			c.Assert(a.Instances[idx].IPAddr, Equals, "172.16.0.11")
-			c.Assert(a.Instances[idx].HostName, Equals, "node1.localdomain")
-		} else {
-			c.Assert(a.Instances[idx].IPAddr, Equals, "172.16.0.22")
-			c.Assert(a.Instances[idx].HostName, Equals, "node2.localdomain")
+func TestGetApps(t *testing.T) {
+	Convey("Pull applications", t, func() {
+		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
+		a, _ := e.GetApps()
+		So(len(a["EUREKA"].Instances), ShouldEqual, 2)
+	})
+	Convey("Pull single application", t, func() {
+		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
+		a, _ := e.GetApp("EUREKA")
+		So(len(a.Instances), ShouldEqual, 2)
+		for idx, ins := range a.Instances {
+			if ins.HostName == "node1.localdomain" {
+				So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.11")
+				So(a.Instances[idx].HostName, ShouldEqual, "node1.localdomain")
+			} else {
+				So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.22")
+				So(a.Instances[idx].HostName, ShouldEqual, "node2.localdomain")
+			}
 		}
-	}
+	})
 }
 
-func (s *S) TestRegisterFakeInstance(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
-	i := fargo.Instance{
-		HostName:         "i-123456",
-		Port:             9090,
-		App:              "TESTAPP",
-		IPAddr:           "127.0.0.10",
-		VipAddress:       "127.0.0.10",
-		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
-		SecureVipAddress: "127.0.0.10",
-		Status:           fargo.UP,
-	}
-	err := e.RegisterInstance(&i)
-	c.Assert(err, IsNil)
+func TestRegistration(t *testing.T) {
+	Convey("Register an instance to TESTAPP", t, func() {
+		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
+		i := fargo.Instance{
+			HostName:         "i-123456",
+			Port:             9090,
+			App:              "TESTAPP",
+			IPAddr:           "127.0.0.10",
+			VipAddress:       "127.0.0.10",
+			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+			SecureVipAddress: "127.0.0.10",
+			Status:           fargo.UP,
+		}
+		err := e.RegisterInstance(&i)
+		So(err, ShouldBeNil)
+	})
+	Convey("Check in for TESTAPP", t, func() {
+		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
+		i := fargo.Instance{
+			HostName:         "i-123456",
+			Port:             9090,
+			App:              "TESTAPP",
+			IPAddr:           "127.0.0.10",
+			VipAddress:       "127.0.0.10",
+			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+			SecureVipAddress: "127.0.0.10",
+			Status:           fargo.UP,
+		}
+		err := e.HeartBeatInstance(&i)
+		So(err, ShouldBeNil)
+	})
 }
 
-func (s *S) TestCheckin(c *C) {
-	e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
-	i := fargo.Instance{
-		HostName:         "i-123456",
-		Port:             9090,
-		App:              "TESTAPP",
-		IPAddr:           "127.0.0.10",
-		VipAddress:       "127.0.0.10",
-		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
-		SecureVipAddress: "127.0.0.10",
-		Status:           fargo.UP,
-	}
-	err := e.HeartBeatInstance(&i)
-	c.Assert(err, IsNil)
-}
-
-func (s *S) TestNewConnectionFromConfic(c *C) {
-	cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
-	c.Assert(err, IsNil)
-	e := fargo.NewConnFromConfig(cfg)
-	apps, err := e.GetApps()
-	c.Assert(err, IsNil)
-	c.Assert(len(apps["EUREKA"].Instances), Equals, 2)
+func TestConnectionCreation(t *testing.T) {
+	Convey("Pull applications", t, func() {
+		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
+		So(err, ShouldBeNil)
+		e := fargo.NewConnFromConfig(cfg)
+		apps, err := e.GetApps()
+		So(err, ShouldBeNil)
+		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
+	})
 }
