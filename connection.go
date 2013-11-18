@@ -68,9 +68,9 @@ func NewConnFromConfig(conf Config) (c EurekaConnection) {
 // NewConn is a default connection with just a list of ServiceUrls. Most basic
 // way to make a new connection. Generally only if you know what you're doing
 // and are going to do the configuration yourself some other way.
-func NewConn(address ...string) (c EurekaConnection) {
-	c.ServiceUrls = address
-	return c
+func NewConn(address ...string) (e EurekaConnection) {
+	e.ServiceUrls = address
+	return e
 }
 
 // UpdateApp creates a goroutine that continues to keep an application updated

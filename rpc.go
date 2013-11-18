@@ -28,7 +28,9 @@ package fargo
 import (
 	"bytes"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"time"
 )
 
 func postXML(url string, reqBody []byte) ([]byte, int, error) {
@@ -66,7 +68,18 @@ func reqXML(req *http.Request) ([]byte, int, error) {
 
 	// Send the request via a client
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	var resp *http.Response
+	var err error
+	for i := 0; i < 3; i++ {
+		resp, err = client.Do(req)
+		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+			// it's a transient network error so we sleep for a bit and try
+			// again in case it's a short-lived issue
+			log.Warning("Retrying after temporary network failure, error: %s",
+				nerr.Error())
+			time.Sleep(10)
+		}
+	}
 	if err != nil {
 		return nil, -1, err
 	}

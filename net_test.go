@@ -32,13 +32,12 @@ import (
 )
 
 func TestGetApps(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
 	Convey("Pull applications", t, func() {
-		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 		a, _ := e.GetApps()
 		So(len(a["EUREKA"].Instances), ShouldEqual, 2)
 	})
 	Convey("Pull single application", t, func() {
-		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 		a, _ := e.GetApp("EUREKA")
 		So(len(a.Instances), ShouldEqual, 2)
 		for idx, ins := range a.Instances {
@@ -54,8 +53,8 @@ func TestGetApps(t *testing.T) {
 }
 
 func TestRegistration(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
 	Convey("Register an instance to TESTAPP", t, func() {
-		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 		i := fargo.Instance{
 			HostName:         "i-123456",
 			Port:             9090,
@@ -70,7 +69,6 @@ func TestRegistration(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 	Convey("Check in for TESTAPP", t, func() {
-		e := fargo.NewConn("http://172.16.0.11:8080/eureka/v2")
 		i := fargo.Instance{
 			HostName:         "i-123456",
 			Port:             9090,
