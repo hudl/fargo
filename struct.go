@@ -25,11 +25,6 @@ package fargo
  * IN THE SOFTWARE.
  */
 
-import (
-	"fmt"
-	"github.com/clbanning/x2j"
-)
-
 // EurekaUrlSlugs is a map of resource names -> eureka URLs
 var EurekaURLSlugs = map[string]string{
 	"Apps":      "apps",
@@ -87,28 +82,7 @@ type Instance struct {
 	SecurePort       int                    `xml:"securePort"`
 	DataCenterInfo   DataCenterInfo         `xml:"dataCenterInfo"`
 	LeaseInfo        LeaseInfo              `xml:"leaseInfo"`
-	metadataObj      []byte                 `xml:"metadata,innerxml"`
 	MetadataMap      map[string]interface{} `xml:"-"`
-}
-
-type InstanceMetadataType struct {
-	Content []byte `xml:",innerxml"`
-}
-
-func (i *Instance) ParseMetaData() error {
-	fmt.Println(i.metadataObj)
-	if len(i.metadataObj) == 0 {
-		return nil
-	}
-	g := append([]byte("<metadata>"), i.metadataObj...)
-	g = append(g, []byte("</metadata>")...)
-	v := map[string]interface{}{}
-	err := x2j.Unmarshal([]byte(g), &v)
-	if err != nil {
-		return err
-	}
-	i.MetadataMap = v["metadata"].(map[string]interface{})
-	return nil
 }
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance

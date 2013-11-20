@@ -100,3 +100,17 @@ func TestConnectionCreation(t *testing.T) {
 		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
 	})
 }
+
+func TestMetadataReading(t *testing.T) {
+	Convey("Read instance metadata", t, func() {
+		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
+		So(err, ShouldBeNil)
+		e := fargo.NewConnFromConfig(cfg)
+		a, err := e.GetApp("EUREKA")
+		So(err, ShouldBeNil)
+		i := a.Instances[0]
+		err = e.GetMetadata(&i)
+		So(err, ShouldBeNil)
+		So(i.MetadataMap["@class"], ShouldEqual, "java.util.Collections$EmptyMap")
+	})
+}

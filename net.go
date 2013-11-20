@@ -26,6 +26,7 @@ package fargo
  */
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"github.com/pmylund/go-cache"
@@ -39,6 +40,30 @@ var eurekaCache = cache.New(30*time.Second, 10*time.Second)
 
 func (e *EurekaConnection) generateUrl(slugs ...string) string {
 	return strings.Join(append([]string{e.SelectServiceURL()}, slugs...), "/")
+}
+
+// GetMetaData fills in the "MetadataMap" field on a given Instance This is
+// here because the golang XML unmarshalling doesn't handle arbitrary XML well.
+func (e *EurekaConnection) GetMetadata(i *Instance) error {
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], i.App, i.HostName)
+	url := e.generateUrl(slug)
+	out, rcode, err := getJSON(url)
+	if err != nil {
+		log.Error("Couldn't get JSON. Error: %s", err.Error())
+		return err
+	}
+	if rcode == 404 {
+		log.Error("instance %s/%s not found (received 404)", i.App, i.HostName)
+		return fmt.Errorf("instance %s/%s not found (received 404)", i.App, i.HostName)
+	}
+	v := map[string]interface{}{}
+	err = json.Unmarshal(out, &v)
+	if err != nil {
+		log.Error("Couldn't decode JSON. Error: %s", err.Error())
+		return err
+	}
+	i.MetadataMap = v["instance"].(map[string]interface{})["metadata"].(map[string]interface{})
+	return nil
 }
 
 // GetApp returns a single eureka application by name. This may be cached.

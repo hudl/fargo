@@ -50,22 +50,44 @@ func postXML(url string, reqBody []byte) ([]byte, int, error) {
 func getXML(url string) ([]byte, int, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Error("Could not create POST %s with Error: %s", url, err.Error())
+		log.Error("Could not create GET %s with Error: %s", url, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete POST %s with Error: %s", url, err.Error())
+		log.Error("Could not complete GET %s with Error: %s", url, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
 }
 
-func reqXML(req *http.Request) ([]byte, int, error) {
+func getJSON(url string) ([]byte, int, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Error("Could not create GET %s with Error: %s", url, err.Error())
+		return nil, -1, err
+	}
+	body, rcode, err := reqJSON(req)
+	if err != nil {
+		log.Error("Could not complete GET %s with Error: %s", url, err.Error())
+		return nil, rcode, err
+	}
+	return body, rcode, nil
+}
 
+func reqJSON(req *http.Request) ([]byte, int, error) {
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	return netReq(req)
+}
+
+func reqXML(req *http.Request) ([]byte, int, error) {
 	req.Header.Set("Content-Type", "application/xml")
 	req.Header.Set("Accept", "application/xml")
+	return netReq(req)
+}
 
+func netReq(req *http.Request) ([]byte, int, error) {
 	// Send the request via a client
 	client := &http.Client{}
 	var resp *http.Response
