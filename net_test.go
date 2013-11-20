@@ -54,9 +54,19 @@ func TestGetApps(t *testing.T) {
 
 func TestRegistration(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
-	Convey("Register an instance to TESTAPP", t, func() {
-		i := fargo.Instance{
-			HostName:         "i-123456",
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
+	Convey("Fail to heartbeat a non-existent instance", t, func() {
+		j := fargo.Instance{
+			HostName:         "i-6543",
 			Port:             9090,
 			App:              "TESTAPP",
 			IPAddr:           "127.0.0.10",
@@ -65,22 +75,18 @@ func TestRegistration(t *testing.T) {
 			SecureVipAddress: "127.0.0.10",
 			Status:           fargo.UP,
 		}
-		err := e.RegisterInstance(&i)
-		So(err, ShouldBeNil)
+		err := e.HeartBeatInstance(&j)
+		So(err, ShouldNotBeNil)
 	})
-	Convey("Check in for TESTAPP", t, func() {
-		i := fargo.Instance{
-			HostName:         "i-123456",
-			Port:             9090,
-			App:              "TESTAPP",
-			IPAddr:           "127.0.0.10",
-			VipAddress:       "127.0.0.10",
-			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
-			SecureVipAddress: "127.0.0.10",
-			Status:           fargo.UP,
-		}
-		err := e.HeartBeatInstance(&i)
-		So(err, ShouldBeNil)
+	Convey("Register an instance to TESTAPP", t, func() {
+		Convey("Instance registers correctly", func() {
+			err := e.RegisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+		Convey("Instance can check in", func() {
+			err := e.HeartBeatInstance(&i)
+			So(err, ShouldBeNil)
+		})
 	})
 }
 

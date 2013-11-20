@@ -25,6 +25,11 @@ package fargo
  * IN THE SOFTWARE.
  */
 
+import (
+	"fmt"
+	"github.com/clbanning/x2j"
+)
+
 // EurekaUrlSlugs is a map of resource names -> eureka URLs
 var EurekaURLSlugs = map[string]string{
 	"Apps":      "apps",
@@ -37,6 +42,7 @@ type EurekaConnection struct {
 	Timeout        int
 	PollInterval   int
 	PreferSameZone bool
+	Retries        int
 }
 
 // GetAppsResponse lets us deserialize the eureka/v2/apps response XML
@@ -70,23 +76,40 @@ const (
 
 // Instance [de]serializeable [to|from] Eureka XML
 type Instance struct {
-	XMLName          struct{}       `xml:"instance"`
-	HostName         string         `xml:"hostName"`
-	App              string         `xml:"app"`
-	IPAddr           string         `xml:"ipAddr"`
-	VipAddress       string         `xml:"vipAddress"`
-	SecureVipAddress string         `xml:"secureVipAddress"`
-	Status           StatusType     `xml:"status"`
-	Port             int            `xml:"port"`
-	SecurePort       int            `xml:"securePort"`
-	DataCenterInfo   DataCenterInfo `xml:"dataCenterInfo"`
-	LeaseInfo        LeaseInfo      `xml:"leaseInfo"`
-	//Metadata         AppMetadataType `xml:"appMetadataType"`
+	XMLName          struct{}               `xml:"instance"`
+	HostName         string                 `xml:"hostName"`
+	App              string                 `xml:"app"`
+	IPAddr           string                 `xml:"ipAddr"`
+	VipAddress       string                 `xml:"vipAddress"`
+	SecureVipAddress string                 `xml:"secureVipAddress"`
+	Status           StatusType             `xml:"status"`
+	Port             int                    `xml:"port"`
+	SecurePort       int                    `xml:"securePort"`
+	DataCenterInfo   DataCenterInfo         `xml:"dataCenterInfo"`
+	LeaseInfo        LeaseInfo              `xml:"leaseInfo"`
+	metadataObj      []byte                 `xml:"metadata,innerxml"`
+	MetadataMap      map[string]interface{} `xml:"-"`
 }
 
-// AppMetadataType is extra properties attachable to Eureka Instances
-// TODO: Actually serialize this
-type AppMetadataType map[string]string
+type InstanceMetadataType struct {
+	Content []byte `xml:",innerxml"`
+}
+
+func (i *Instance) ParseMetaData() error {
+	fmt.Println(i.metadataObj)
+	if len(i.metadataObj) == 0 {
+		return nil
+	}
+	g := append([]byte("<metadata>"), i.metadataObj...)
+	g = append(g, []byte("</metadata>")...)
+	v := map[string]interface{}{}
+	err := x2j.Unmarshal([]byte(g), &v)
+	if err != nil {
+		return err
+	}
+	i.MetadataMap = v["metadata"].(map[string]interface{})
+	return nil
+}
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance
 type AmazonMetadataType struct {

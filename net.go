@@ -164,7 +164,7 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 	}
 	if rcode != 200 {
 		log.Error("Sending heartbeat for Instance=%s App=%s returned code %d\n", ins.HostName, ins.App, rcode)
-		return fmt.Errorf("error, heartbeat returned code %d\n", rcode)
+		return fmt.Errorf("heartbeat returned code %d\n", rcode)
 	}
 	return nil
 }

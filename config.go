@@ -60,6 +60,7 @@ type eureka struct {
 	EnableDelta           bool     // TODO: Support querying for deltas
 	PreferSameZone        bool     // default false
 	RegisterWithEureka    bool     // default false
+	Retries               int      // default 3
 }
 
 // ReadConfig from a file location. Minimal error handling. Just bails and passes up
@@ -76,6 +77,9 @@ func ReadConfig(loc string) (conf Config, err error) {
 
 func (c *Config) fillDefaults() {
 	// TODO: Read in current Availability Zone if in AWS (DC==Amazon)
+	if c.Eureka.Retries == 0 {
+		c.Eureka.Retries = 3
+	}
 	if c.Eureka.ConnectTimeoutSeconds == 0 {
 		c.Eureka.ConnectTimeoutSeconds = 10
 	}
