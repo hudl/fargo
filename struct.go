@@ -86,9 +86,9 @@ type Instance struct {
 }
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance
+// <xsd:complexType name="amazonMetdataType">
+// from http://docs.amazonwebservices.com/AWSEC2/latest/DeveloperGuide/index.html?AESDG-chapter-instancedata.html
 type AmazonMetadataType struct {
-	// <xsd:complexType name="amazonMetdataType">
-	// from http://docs.amazonwebservices.com/AWSEC2/latest/DeveloperGuide/index.html?AESDG-chapter-instancedata.html
 	AmiLaunchIndex   string `xml:"ami-launch-index"`
 	LocalHostname    string `xml:"local-hostname"`
 	AvailabilityZone string `xml:"availability-zone"`

@@ -45,7 +45,12 @@ func (e *EurekaConnection) generateUrl(slugs ...string) string {
 // GetMetaData fills in the "MetadataMap" field on a given Instance This is
 // here because the golang XML unmarshalling doesn't handle arbitrary XML well.
 func (e *EurekaConnection) GetMetadata(i *Instance) error {
-	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], i.App, i.HostName)
+	var slug string
+	if i.DataCenterInfo.Name == Amazon {
+		slug = fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], i.App, i.DataCenterInfo.Metadata.InstanceID)
+	} else if i.DataCenterInfo.Name == MyOwn {
+		slug = fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], i.App, i.HostName)
+	}
 	url := e.generateUrl(slug)
 	out, rcode, err := getJSON(url)
 	if err != nil {
