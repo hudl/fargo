@@ -30,11 +30,15 @@ import (
 	"time"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 // SelectServiceURL gets a eureka instance based on the connection's load
 // balancing scheme.
 // TODO: Make this not just pick a random one.
 func (e *EurekaConnection) SelectServiceURL() string {
-	return e.ServiceUrls[rand.Int31n(int32(len(e.ServiceUrls)))]
+	return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
 }
 
 // NewConnFromConfigFile sets up a connection object based on a config in
