@@ -1,1 +1,3 @@
 *.test
+eureka
+.vagrant/
