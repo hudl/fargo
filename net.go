@@ -52,6 +52,7 @@ func (e *EurekaConnection) GetMetadata(i *Instance) error {
 		slug = fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], i.App, i.HostName)
 	}
 	url := e.generateUrl(slug)
+	log.Notice("Getting metadata")
 	out, rcode, err := getJSON(url)
 	if err != nil {
 		log.Error("Couldn't get JSON. Error: %s", err.Error())
@@ -104,13 +105,13 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 }
 
 // GetApps returns a map of all Applications. Note: May be cached
-func (e *EurekaConnection) GetApps() (map[string]Application, error) {
+func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 	slug := EurekaURLSlugs["Apps"]
 	url := e.generateUrl(slug)
 	cachedApps, found := eurekaCache.Get(slug)
 	if found {
 		log.Notice("Got %s from cache", url)
-		return cachedApps.(map[string]Application), nil
+		return cachedApps.(map[string]*Application), nil
 	}
 	log.Debug("Getting all apps from url %s", url)
 	out, rcode, err := getXML(url)
@@ -124,9 +125,9 @@ func (e *EurekaConnection) GetApps() (map[string]Application, error) {
 		log.Error("Unmarshalling error", err.Error())
 		return nil, err
 	}
-	apps := map[string]Application{}
+	apps := map[string]*Application{}
 	for _, app := range v.Applications {
-		apps[app.Name] = app
+		apps[app.Name] = &app
 	}
 	if rcode > 299 || rcode < 200 {
 		log.Warning("Non-200 rcode of %d", rcode)
