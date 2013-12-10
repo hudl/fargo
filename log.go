@@ -31,7 +31,7 @@ import (
 	"os"
 )
 
-var log = logging.MustGetLogger("godu")
+var log = logging.MustGetLogger("fargo")
 
 func init() {
 	logBackend := logging.NewLogBackend(os.Stderr, "[fargo] ", stdlog.LstdFlags|stdlog.Lshortfile)
