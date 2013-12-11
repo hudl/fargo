@@ -27,6 +27,7 @@ package fargo
 
 import (
 	"bytes"
+	"github.com/mreiferson/go-httpclient"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -88,8 +89,15 @@ func reqXML(req *http.Request) ([]byte, int, error) {
 }
 
 func netReq(req *http.Request) ([]byte, int, error) {
+	transport := &httpclient.Transport{
+		ConnectTimeout:        5 * time.Second,
+		RequestTimeout:        30 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+	}
+	defer transport.Close()
+
 	// Send the request via a client
-	client := &http.Client{}
+	client := &http.Client{Transport: transport}
 	var resp *http.Response
 	var err error
 	for i := 0; i < 3; i++ {
