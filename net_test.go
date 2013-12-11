@@ -26,6 +26,7 @@ package fargo_test
  */
 
 import (
+	"fmt"
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -109,8 +110,8 @@ func TestMetadataReading(t *testing.T) {
 		a, err := e.GetApp("EUREKA")
 		So(err, ShouldBeNil)
 		i := a.Instances[0]
-		err = e.GetMetadata(&i)
+		v, err := i.Metadata.GetString("@class")
 		So(err, ShouldBeNil)
-		So(i.MetadataMap["@class"], ShouldEqual, "java.util.Collections$EmptyMap")
+		So(v, ShouldEqual, "java.util.Collections$EmptyMap")
 	})
 }

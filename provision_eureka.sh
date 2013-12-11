@@ -21,7 +21,7 @@ echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdom
 
 cd /vagrant/eureka
 #./gradlew clean build
-cp ./eureka-server/build/libs/eureka-server-1.1.118.war /var/lib/tomcat/webapps/eureka.war
+cp ./eureka-server/build/libs/eureka-server-1.1.*.war /var/lib/tomcat/webapps/eureka.war
 chmod a+x /var/lib/tomcat/webapps/eureka.war
 
 service tomcat restart

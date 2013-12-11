@@ -71,18 +71,23 @@ const (
 
 // Instance [de]serializeable [to|from] Eureka XML
 type Instance struct {
-	XMLName          struct{}               `xml:"instance"`
-	HostName         string                 `xml:"hostName"`
-	App              string                 `xml:"app"`
-	IPAddr           string                 `xml:"ipAddr"`
-	VipAddress       string                 `xml:"vipAddress"`
-	SecureVipAddress string                 `xml:"secureVipAddress"`
-	Status           StatusType             `xml:"status"`
-	Port             int                    `xml:"port"`
-	SecurePort       int                    `xml:"securePort"`
-	DataCenterInfo   DataCenterInfo         `xml:"dataCenterInfo"`
-	LeaseInfo        LeaseInfo              `xml:"leaseInfo"`
-	MetadataMap      map[string]interface{} `xml:"-"`
+	XMLName          struct{}         `xml:"instance"`
+	HostName         string           `xml:"hostName"`
+	App              string           `xml:"app"`
+	IPAddr           string           `xml:"ipAddr"`
+	VipAddress       string           `xml:"vipAddress"`
+	SecureVipAddress string           `xml:"secureVipAddress"`
+	Status           StatusType       `xml:"status"`
+	Port             int              `xml:"port"`
+	SecurePort       int              `xml:"securePort"`
+	DataCenterInfo   DataCenterInfo   `xml:"dataCenterInfo"`
+	LeaseInfo        LeaseInfo        `xml:"leaseInfo"`
+	Metadata         InstanceMetadata `xml:"metadata"`
+}
+
+type InstanceMetadata struct {
+	Raw    []byte                  `xml:",innerxml"`
+	parsed *map[string]interface{} `xml:"-"`
 }
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance
