@@ -19,10 +19,10 @@ echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdom
 172.16.0.22 node2 node2.localdomain
 " > /etc/hosts
 
-cd /vagrant/eureka
-#./gradlew clean build
-cp ./eureka-server/build/libs/eureka-server-1.1.*.war /var/lib/tomcat/webapps/eureka.war
+cp /vagrant/eureka-server-1.1.*.war /var/lib/tomcat/webapps/eureka.war
 chmod a+x /var/lib/tomcat/webapps/eureka.war
+#cd /eureka-repo
+#./gradlew clean build
 
 service tomcat restart
 chkconfig tomcat on
