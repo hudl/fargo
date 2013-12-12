@@ -85,6 +85,8 @@ type Instance struct {
 	Metadata         InstanceMetadata `xml:"metadata"`
 }
 
+// InstanceMetadata represents the eureka metadata, which is arbitrary XML. See
+// metadata.go for more info.
 type InstanceMetadata struct {
 	Raw    []byte                 `xml:",innerxml"`
 	parsed map[string]interface{} `xml:"-"`

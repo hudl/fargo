@@ -60,14 +60,7 @@ func (im *InstanceMetadata) parse() error {
 	return nil
 }
 
-func (im *InstanceMetadata) AddString(key, value string) {
-	im.parsed[key] = value
-}
-
-func (im *InstanceMetadata) AddBool(key string, value bool) {
-	im.parsed[key] = value
-}
-
+// GetMap returns a map of the metadata parameters for this instance
 func (im *InstanceMetadata) GetMap() map[string]interface{} {
 	return im.parsed
 }
@@ -80,6 +73,8 @@ func (im *InstanceMetadata) getItem(key string) (interface{}, error) {
 	return im.parsed[key], nil
 }
 
+// GetString pulls a value cast as a string. Swallows panics from type
+// assertion and returns empty string + an error if conversion fails
 func (im *InstanceMetadata) GetString(key string) (s string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -91,6 +86,8 @@ func (im *InstanceMetadata) GetString(key string) (s string, err error) {
 	return v.(string), err
 }
 
+// GetInt pulls a value cast as int. Swallows panics from type assertion and
+// returns 0 + an error if conversion fails
 func (im *InstanceMetadata) GetInt(key string) (i int, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -102,6 +99,8 @@ func (im *InstanceMetadata) GetInt(key string) (i int, err error) {
 	return v.(int), err
 }
 
+// GetFloat32 pulls a value cast as float. Swallows panics from type assertion
+// and returns 0.0 + an error if conversion fails
 func (im *InstanceMetadata) GetFloat32(key string) (f float32, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -113,6 +112,8 @@ func (im *InstanceMetadata) GetFloat32(key string) (f float32, err error) {
 	return v.(float32), err
 }
 
+// GetFloat64 pulls a value cast as float. Swallows panics from type assertion
+// and returns 0.0 + an error if conversion fails
 func (im *InstanceMetadata) GetFloat64(key string) (f float64, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -124,6 +125,8 @@ func (im *InstanceMetadata) GetFloat64(key string) (f float64, err error) {
 	return v.(float64), err
 }
 
+// GetBool pulls a value cast as bool.  Swallows panics from type assertion and
+// returns false + an error if conversion fails
 func (im *InstanceMetadata) GetBool(key string) (b bool, err error) {
 	defer func() {
 		if r := recover(); r != nil {

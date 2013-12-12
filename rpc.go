@@ -35,50 +35,50 @@ import (
 	"time"
 )
 
-func postXML(reqUrl string, reqBody []byte) ([]byte, int, error) {
-	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(reqBody))
+func postXML(reqURL string, reqBody []byte) ([]byte, int, error) {
+	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(reqBody))
 	if err != nil {
-		log.Error("Could not create POST %s with body %s Error: %s", reqUrl, string(reqBody), err.Error())
+		log.Error("Could not create POST %s with body %s Error: %s", reqURL, string(reqBody), err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete POST %s with body %s Error: %s", reqUrl, string(reqBody), err.Error())
+		log.Error("Could not complete POST %s with body %s Error: %s", reqURL, string(reqBody), err.Error())
 		return nil, rcode, err
 	}
 	//eurekaCache.Flush()
 	return body, rcode, nil
 }
 
-func putKV(reqUrl string, pairs map[string]string) ([]byte, int, error) {
+func putKV(reqURL string, pairs map[string]string) ([]byte, int, error) {
 	params := url.Values{}
 	for k, v := range pairs {
 		params.Add(k, v)
 	}
-	parameterizedUrl := reqUrl + "?" + params.Encode()
-	log.Notice("Sending metadata request with URL %s", parameterizedUrl)
-	req, err := http.NewRequest("PUT", parameterizedUrl, nil)
+	parameterizedURL := reqURL + "?" + params.Encode()
+	log.Notice("Sending metadata request with URL %s", parameterizedURL)
+	req, err := http.NewRequest("PUT", parameterizedURL, nil)
 	if err != nil {
-		log.Error("Could not create PUT %s with Error: %s", reqUrl, err.Error())
+		log.Error("Could not create PUT %s with Error: %s", reqURL, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete PUT %s with Error: %s", reqUrl, err.Error())
+		log.Error("Could not complete PUT %s with Error: %s", reqURL, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
 }
 
-func getXML(reqUrl string) ([]byte, int, error) {
-	req, err := http.NewRequest("GET", reqUrl, nil)
+func getXML(reqURL string) ([]byte, int, error) {
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		log.Error("Could not create GET %s with Error: %s", reqUrl, err.Error())
+		log.Error("Could not create GET %s with Error: %s", reqURL, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete GET %s with Error: %s", reqUrl, err.Error())
+		log.Error("Could not complete GET %s with Error: %s", reqURL, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil

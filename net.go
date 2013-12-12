@@ -37,21 +37,21 @@ import (
 // expire cached items after 30 seconds, cleanup every 10
 var eurekaCache = cache.New(30*time.Second, 10*time.Second)
 
-func (e *EurekaConnection) generateUrl(slugs ...string) string {
+func (e *EurekaConnection) generateURL(slugs ...string) string {
 	return strings.Join(append([]string{e.SelectServiceURL()}, slugs...), "/")
 }
 
 // GetApp returns a single eureka application by name. This may be cached.
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], name)
-	reqUrl := e.generateUrl(slug)
+	reqURL := e.generateURL(slug)
 	cachedApp, found := eurekaCache.Get(slug)
 	if found {
-		log.Notice("Got %s from cache", reqUrl)
+		log.Notice("Got %s from cache", reqURL)
 		return cachedApp.(Application), nil
 	}
-	log.Debug("Getting app %s from url %s", name, reqUrl)
-	out, rcode, err := getXML(reqUrl)
+	log.Debug("Getting app %s from url %s", name, reqURL)
+	out, rcode, err := getXML(reqURL)
 	if err != nil {
 		log.Error("Couldn't get XML. Error: %s", err.Error())
 		return Application{}, err
@@ -77,14 +77,14 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 // GetApps returns a map of all Applications. Note: May be cached
 func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 	slug := EurekaURLSlugs["Apps"]
-	reqUrl := e.generateUrl(slug)
+	reqURL := e.generateURL(slug)
 	cachedApps, found := eurekaCache.Get(slug)
 	if found {
-		log.Notice("Got %s from cache", reqUrl)
+		log.Notice("Got %s from cache", reqURL)
 		return cachedApps.(map[string]*Application), nil
 	}
-	log.Debug("Getting all apps from url %s", reqUrl)
-	out, rcode, err := getXML(reqUrl)
+	log.Debug("Getting all apps from url %s", reqURL)
+	out, rcode, err := getXML(reqURL)
 	if err != nil {
 		log.Error("Couldn't get XML.", err.Error())
 		return nil, err
@@ -110,15 +110,16 @@ func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 	return apps, nil
 }
 
+// AddMetadataString to a given instance. Is immediately sent to Eureka server.
 func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) error {
 	slug := fmt.Sprintf("%s/%s/%s/metadata", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
-	reqUrl := e.generateUrl(slug)
+	reqURL := e.generateURL(slug)
 
 	params := map[string]string{key: value}
 	ins.Metadata.parsed[key] = value
 
-	log.Debug("Updating instance metadata url=%s metadata=%s", reqUrl, params)
-	body, rcode, err := putKV(reqUrl, params)
+	log.Debug("Updating instance metadata url=%s metadata=%s", reqURL, params)
+	body, rcode, err := putKV(reqURL, params)
 	if err != nil {
 		log.Error("Could not complete update with Error: ", err.Error())
 		return err
@@ -135,9 +136,9 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 // functionality
 func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], ins.App)
-	reqUrl := e.generateUrl(slug)
-	log.Debug("Registering instance with url %s", reqUrl)
-	_, rcode, err := getXML(reqUrl + "/" + ins.HostName)
+	reqURL := e.generateURL(slug)
+	log.Debug("Registering instance with url %s", reqURL)
+	_, rcode, err := getXML(reqURL + "/" + ins.HostName)
 	if err != nil {
 		log.Error("Failed check if Instance=%s exists in App=%s. Error=\"%s\"",
 			ins.HostName, ins.App, err.Error())
@@ -156,7 +157,7 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 		log.Error("Error marshalling XML Instance=%s App=%s. Error:\"%s\" XML body=\"%s\"", err.Error(), ins.HostName, ins.App, string(out))
 		return err
 	}
-	body, rcode, err := postXML(reqUrl, out)
+	body, rcode, err := postXML(reqURL, out)
 	if err != nil {
 		log.Error("Could not complete registration Error: ", err.Error())
 		return err
@@ -166,7 +167,7 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 		return fmt.Errorf("http returned %d possible failure creating instance\n", rcode)
 	}
 
-	body, rcode, err = getXML(reqUrl + "/" + ins.HostName)
+	body, rcode, err = getXML(reqURL + "/" + ins.HostName)
 	xml.Unmarshal(body, ins)
 	return nil
 }
@@ -175,9 +176,9 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 // heartbeats. Errors if the response is not 200.
 func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
-	reqUrl := e.generateUrl(slug)
-	log.Debug("Sending heartbeat with url %s", reqUrl)
-	req, err := http.NewRequest("PUT", reqUrl, nil)
+	reqURL := e.generateURL(slug)
+	log.Debug("Sending heartbeat with url %s", reqURL)
+	req, err := http.NewRequest("PUT", reqURL, nil)
 	if err != nil {
 		log.Error("Could not create request for heartbeat. Error: %s", err.Error())
 		return err
@@ -197,9 +198,9 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 func (e *EurekaConnection) readAppInto(name string, app *Application) error {
 	//TODO: This should probably use the cache, but it's only called at PollInterval anyways
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], name)
-	reqUrl := e.generateUrl(slug)
-	log.Debug("Getting app %s from url %s", name, reqUrl)
-	out, rcode, err := getXML(reqUrl)
+	reqURL := e.generateURL(slug)
+	log.Debug("Getting app %s from url %s", name, reqURL)
+	out, rcode, err := getXML(reqURL)
 	if err != nil {
 		log.Error("Couldn't get XML. Error: %s", err.Error())
 		return err
