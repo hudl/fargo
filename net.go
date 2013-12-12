@@ -28,28 +28,18 @@ package fargo
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/pmylund/go-cache"
 	"net/http"
 	"strings"
-	"time"
 )
-
-// expire cached items after 30 seconds, cleanup every 10
-var eurekaCache = cache.New(30*time.Second, 10*time.Second)
 
 func (e *EurekaConnection) generateURL(slugs ...string) string {
 	return strings.Join(append([]string{e.SelectServiceURL()}, slugs...), "/")
 }
 
-// GetApp returns a single eureka application by name. This may be cached.
+// GetApp returns a single eureka application by name
 func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], name)
 	reqURL := e.generateURL(slug)
-	cachedApp, found := eurekaCache.Get(slug)
-	if found {
-		log.Notice("Got %s from cache", reqURL)
-		return cachedApp.(Application), nil
-	}
 	log.Debug("Getting app %s from url %s", name, reqURL)
 	out, rcode, err := getXML(reqURL)
 	if err != nil {
@@ -70,19 +60,13 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 		log.Warning("Non-200 rcode of %d", rcode)
 	}
 	v.ParseAllMetadata()
-	eurekaCache.Set(slug, v, 0)
 	return v, nil
 }
 
-// GetApps returns a map of all Applications. Note: May be cached
+// GetApps returns a map of all Applications
 func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 	slug := EurekaURLSlugs["Apps"]
 	reqURL := e.generateURL(slug)
-	cachedApps, found := eurekaCache.Get(slug)
-	if found {
-		log.Notice("Got %s from cache", reqURL)
-		return cachedApps.(map[string]*Application), nil
-	}
 	log.Debug("Getting all apps from url %s", reqURL)
 	out, rcode, err := getXML(reqURL)
 	if err != nil {
@@ -106,7 +90,6 @@ func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 		log.Debug("Parsing metadata for Application=%s", name)
 		app.ParseAllMetadata()
 	}
-	eurekaCache.Set(slug, apps, 0)
 	return apps, nil
 }
 
@@ -196,7 +179,6 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 }
 
 func (e *EurekaConnection) readAppInto(name string, app *Application) error {
-	//TODO: This should probably use the cache, but it's only called at PollInterval anyways
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], name)
 	reqURL := e.generateURL(slug)
 	log.Debug("Getting app %s from url %s", name, reqURL)
