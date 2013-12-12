@@ -49,8 +49,8 @@ type GetAppsResponse struct {
 
 // Application deserializeable from Eureka XML
 type Application struct {
-	Name      string     `xml:"name"`
-	Instances []Instance `xml:"instance"`
+	Name      string      `xml:"name"`
+	Instances []*Instance `xml:"instance"`
 }
 
 // StatusType is an enum of the different statuses allowed by Eureka
@@ -86,8 +86,8 @@ type Instance struct {
 }
 
 type InstanceMetadata struct {
-	Raw    []byte                  `xml:",innerxml"`
-	parsed *map[string]interface{} `xml:"-"`
+	Raw    []byte                 `xml:",innerxml"`
+	parsed map[string]interface{} `xml:"-"`
 }
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance

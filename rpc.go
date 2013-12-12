@@ -31,55 +31,57 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
 
-func postXML(url string, reqBody []byte) ([]byte, int, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+func postXML(reqUrl string, reqBody []byte) ([]byte, int, error) {
+	req, err := http.NewRequest("POST", reqUrl, bytes.NewReader(reqBody))
 	if err != nil {
-		log.Error("Could not create POST %s with body %s Error: %s", url, string(reqBody), err.Error())
+		log.Error("Could not create POST %s with body %s Error: %s", reqUrl, string(reqBody), err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete POST %s with body %s Error: %s", url, string(reqBody), err.Error())
+		log.Error("Could not complete POST %s with body %s Error: %s", reqUrl, string(reqBody), err.Error())
 		return nil, rcode, err
 	}
+	//eurekaCache.Flush()
 	return body, rcode, nil
 }
 
-func getXML(url string) ([]byte, int, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func putKV(reqUrl string, pairs map[string]string) ([]byte, int, error) {
+	params := url.Values{}
+	for k, v := range pairs {
+		params.Add(k, v)
+	}
+	parameterizedUrl := reqUrl + "?" + params.Encode()
+	log.Notice("Sending metadata request with URL %s", parameterizedUrl)
+	req, err := http.NewRequest("PUT", parameterizedUrl, nil)
 	if err != nil {
-		log.Error("Could not create GET %s with Error: %s", url, err.Error())
+		log.Error("Could not create PUT %s with Error: %s", reqUrl, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete GET %s with Error: %s", url, err.Error())
+		log.Error("Could not complete PUT %s with Error: %s", reqUrl, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
 }
 
-func getJSON(url string) ([]byte, int, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func getXML(reqUrl string) ([]byte, int, error) {
+	req, err := http.NewRequest("GET", reqUrl, nil)
 	if err != nil {
-		log.Error("Could not create GET %s with Error: %s", url, err.Error())
+		log.Error("Could not create GET %s with Error: %s", reqUrl, err.Error())
 		return nil, -1, err
 	}
-	body, rcode, err := reqJSON(req)
+	body, rcode, err := reqXML(req)
 	if err != nil {
-		log.Error("Could not complete GET %s with Error: %s", url, err.Error())
+		log.Error("Could not complete GET %s with Error: %s", reqUrl, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
-}
-
-func reqJSON(req *http.Request) ([]byte, int, error) {
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	return netReq(req)
 }
 
 func reqXML(req *http.Request) ([]byte, int, error) {

@@ -26,7 +26,6 @@ package fargo_test
  */
 
 import (
-	"fmt"
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -103,15 +102,28 @@ func TestConnectionCreation(t *testing.T) {
 }
 
 func TestMetadataReading(t *testing.T) {
-	Convey("Read instance metadata", t, func() {
-		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
-		So(err, ShouldBeNil)
-		e := fargo.NewConnFromConfig(cfg)
+	cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
+	So(err, ShouldBeNil)
+	e := fargo.NewConnFromConfig(cfg)
+	Convey("Read empty instance metadata", t, func() {
 		a, err := e.GetApp("EUREKA")
 		So(err, ShouldBeNil)
 		i := a.Instances[0]
-		v, err := i.Metadata.GetString("@class")
+		_, err = i.Metadata.GetString("SomeProp")
+		So(err, ShouldNotBeNil)
+	})
+	Convey("Read valid instance metadata", t, func() {
+		a, err := e.GetApp("TESTAPP")
 		So(err, ShouldBeNil)
-		So(v, ShouldEqual, "java.util.Collections$EmptyMap")
+		So(len(a.Instances), ShouldBeGreaterThan, 0)
+		if len(a.Instances) == 0 {
+			return
+		}
+		i := a.Instances[0]
+		err = e.AddMetadataString(i, "SomeProp", "AValue")
+		So(err, ShouldBeNil)
+		v, err := i.Metadata.GetString("SomeProp")
+		So(err, ShouldBeNil)
+		So(v, ShouldEqual, "AValue")
 	})
 }

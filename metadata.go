@@ -30,25 +30,46 @@ import (
 	"github.com/clbanning/x2j"
 )
 
-func (im *InstanceMetadata) parse() error {
-	if im.parsed != nil {
-		return nil
+// ParseAllMetadata iterates through all instances in an application
+func (a *Application) ParseAllMetadata() error {
+	for _, instance := range a.Instances {
+		err := instance.Metadata.parse()
+		if err != nil {
+			log.Error("Failed parsing metadata for Instance=%s of Application=%s: ", instance.HostName, a.Name, err.Error())
+			return err
+		}
 	}
-	v := map[string]interface{}{}
+	return nil
+}
+
+func (im *InstanceMetadata) parse() error {
 	// wrap in a BS xml tag so all metadata tags are pulled
 	if len(im.Raw) == 0 {
-		log.Warning("Metadata contents has length of 0. This may not be correct")
+		im.parsed = make(map[string]interface{})
+		log.Warning("Metadata contents has length of 0. Quitting parsing.")
+		return nil
 	}
 	log.Debug("Metadata length: ", len(im.Raw), " characters")
-	j := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
-	err := x2j.Unmarshal(j, &v)
+	fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
+	parsedDoc, err := x2j.ByteDocToMap(fullDoc, true)
 	if err != nil {
 		log.Error("Error unmarshalling: ", err.Error())
-		return fmt.Errorf("Error unmarshalling: ", err.Error())
+		return fmt.Errorf("error unmarshalling: ", err.Error())
 	}
-	parsed := v["d"].(map[string]interface{})
-	im.parsed = &parsed
+	im.parsed = parsedDoc["d"].(map[string]interface{})
 	return nil
+}
+
+func (im *InstanceMetadata) AddString(key, value string) {
+	im.parsed[key] = value
+}
+
+func (im *InstanceMetadata) AddBool(key string, value bool) {
+	im.parsed[key] = value
+}
+
+func (im *InstanceMetadata) GetMap() map[string]interface{} {
+	return im.parsed
 }
 
 func (im *InstanceMetadata) getItem(key string) (interface{}, error) {
@@ -56,30 +77,60 @@ func (im *InstanceMetadata) getItem(key string) (interface{}, error) {
 	if err != nil {
 		return "", fmt.Errorf("parsing error: ", err.Error())
 	}
-	return (*im.parsed)[key], nil
+	return im.parsed[key], nil
 }
 
-func (im *InstanceMetadata) GetString(key string) (string, error) {
+func (im *InstanceMetadata) GetString(key string) (s string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			s = ""
+			err = fmt.Errorf("failed to cast interface to string")
+		}
+	}()
 	v, err := im.getItem(key)
 	return v.(string), err
 }
 
-func (im *InstanceMetadata) GetInt(key string) (int, error) {
+func (im *InstanceMetadata) GetInt(key string) (i int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			i = 0
+			err = fmt.Errorf("failed to cast interface to int")
+		}
+	}()
 	v, err := im.getItem(key)
 	return v.(int), err
 }
 
-func (im *InstanceMetadata) GetFloat32(key string) (float32, error) {
+func (im *InstanceMetadata) GetFloat32(key string) (f float32, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			f = 0.0
+			err = fmt.Errorf("failed to cast interface to float32")
+		}
+	}()
 	v, err := im.getItem(key)
 	return v.(float32), err
 }
 
-func (im *InstanceMetadata) GetFloat64(key string) (float64, error) {
+func (im *InstanceMetadata) GetFloat64(key string) (f float64, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			f = 0.0
+			err = fmt.Errorf("failed to cast interface to float64")
+		}
+	}()
 	v, err := im.getItem(key)
 	return v.(float64), err
 }
 
-func (im *InstanceMetadata) GetBool(key string) (bool, error) {
+func (im *InstanceMetadata) GetBool(key string) (b bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			b = false
+			err = fmt.Errorf("failed to cast interface to bool")
+		}
+	}()
 	v, err := im.getItem(key)
 	return v.(bool), err
 }
