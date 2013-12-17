@@ -25,6 +25,10 @@ package fargo
  * IN THE SOFTWARE.
  */
 
+import (
+	"time"
+)
+
 // EurekaUrlSlugs is a map of resource names -> eureka URLs
 var EurekaURLSlugs = map[string]string{
 	"Apps":      "apps",
@@ -35,7 +39,7 @@ var EurekaURLSlugs = map[string]string{
 type EurekaConnection struct {
 	ServiceUrls    []string
 	Timeout        int
-	PollInterval   int
+	PollInterval   time.Duration
 	PreferSameZone bool
 	Retries        int
 }
