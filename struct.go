@@ -38,7 +38,7 @@ var EurekaURLSlugs = map[string]string{
 // EurekaConnection is the settings required to make eureka requests
 type EurekaConnection struct {
 	ServiceUrls    []string
-	Timeout        int
+	Timeout        time.Duration
 	PollInterval   time.Duration
 	PreferSameZone bool
 	Retries        int

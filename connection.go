@@ -63,7 +63,7 @@ func NewConnFromConfig(conf Config) (c EurekaConnection) {
 	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDNSName) > 0 {
 		c.ServiceUrls = []string{conf.Eureka.ServerDNSName}
 	}
-	c.Timeout = conf.Eureka.ConnectTimeoutSeconds
+	c.Timeout = time.Duration(conf.Eureka.ConnectTimeoutSeconds) * time.Second
 	c.PollInterval = time.Duration(conf.Eureka.PollIntervalSeconds) * time.Second
 	c.PreferSameZone = conf.Eureka.PreferSameZone
 	return c
