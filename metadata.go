@@ -49,7 +49,7 @@ func (im *InstanceMetadata) parse() error {
 		log.Warning("Metadata contents has length of 0. Quitting parsing.")
 		return nil
 	}
-	log.Debug("Metadata length: ", len(im.Raw), " characters")
+	log.Debug("Metadata length: %d characters", len(im.Raw))
 	fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
 	parsedDoc, err := x2j.ByteDocToMap(fullDoc, true)
 	if err != nil {
