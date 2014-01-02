@@ -37,5 +37,5 @@ func init() {
 	logBackend := logging.NewLogBackend(os.Stderr, "[fargo] ", stdlog.LstdFlags|stdlog.Lshortfile)
 	logBackend.Color = true
 	logging.SetBackend(logBackend)
-	logging.SetLevel(logging.DEBUG, "")
+	logging.SetLevel(logging.INFO, "")
 }
