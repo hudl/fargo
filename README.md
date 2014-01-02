@@ -6,6 +6,11 @@ Netflix Eureka client in golang. Named for the show Eureka.
 c = fargo.NewConn("http", "127.0.0.1", "8080")
 c.GetApps() // returns a map[String]fargo.Application
 ```
+# Known Issues
+
+Until [this PR](https://github.com/mitchellh/vagrant/pull/2742) is in an
+official vagrant release, the Fedora 19 opscode box will fail when setting up
+private networks in vagrant 1.2.5 and later.
 
 # FAQ
 
