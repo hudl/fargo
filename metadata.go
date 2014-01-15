@@ -72,8 +72,8 @@ func (im *InstanceMetadata) GetInt(key string) (i int, err error) {
 			err = fmt.Errorf("failed to cast interface to int")
 		}
 	}()
-	v, err := im.getItem(key)
-	return v.(int), err
+	v, err := im.GetFloat64(key)
+	return int(v), err
 }
 
 // GetFloat32 pulls a value cast as float. Swallows panics from type assertion
@@ -85,8 +85,8 @@ func (im *InstanceMetadata) GetFloat32(key string) (f float32, err error) {
 			err = fmt.Errorf("failed to cast interface to float32")
 		}
 	}()
-	v, err := im.getItem(key)
-	return v.(float32), err
+	v, err := im.GetFloat64(key)
+	return float32(v), err
 }
 
 // GetFloat64 pulls a value cast as float. Swallows panics from type assertion
