@@ -41,7 +41,7 @@ func TestGetInt(t *testing.T) {
 			Convey("That has a single integer value", func() {
 				key := "d"
 				value := 1
-				metadata.Raw = []byte("<" + key + ">" + strconv.Itoa(1) + "</" + key + ">")
+				metadata.Raw = []byte("<" + key + ">" + strconv.Itoa(value) + "</" + key + ">")
 				Convey("GetInt should return that value", func() {
 					actualValue, err := metadata.GetInt(key)
 					So(err, ShouldBeNil)
