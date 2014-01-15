@@ -77,7 +77,7 @@ func main() {
 
 ## Adding Stuff
 
-`go test` is your friend. I use the excellent [gocheck](https://launchpad.net/gocheck)
+`go test` is your friend. I use the excellent [goconvey](http://goconvey.co/)
 library in addition to the standard lib's `testing` package. If you add
 something, write a test. If something is broken, write a test that reproduces
 your issue or post repro steps to the issues on this repository. The tests
