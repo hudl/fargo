@@ -99,7 +99,6 @@ To build eureka `git clone https://github.com/Netflix/eureka.git && cd eureka
 ```
 The MIT License (MIT)
 
-Copyright (c) 2013 Ryan S. Brown <sb@ryansb.com>
 Copyright (c) 2013 Hudl <@Hudl>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
