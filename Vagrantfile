@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
             vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
         end
     end
-    config.vm.define "node2", primary: true do |node2|
+    config.vm.define "node2" do |node2|
         node2.vm.box = "opscode-f19-64"
         node2.vm.box_url = "https://opscode-vm-bento.s3.amazonaws.com/vagrant/opscode-fedora-19_provisionerless.box"
         #node2.vm.synced_folder "~/code/eureka", "/eureka-repo"
