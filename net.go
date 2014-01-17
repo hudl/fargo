@@ -76,6 +76,9 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	reqURL := e.generateURL(slug)
 
 	params := map[string]string{key: value}
+	if ins.Metadata.parsed == nil {
+		ins.Metadata.parsed = map[string]interface{}{}
+	}
 	ins.Metadata.parsed[key] = value
 
 	log.Debug("Updating instance metadata url=%s metadata=%s", reqURL, params)
