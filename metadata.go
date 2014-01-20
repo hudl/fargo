@@ -42,12 +42,13 @@ func (im *InstanceMetadata) GetMap() map[string]interface{} {
 	return im.parsed
 }
 
-func (im *InstanceMetadata) getItem(key string) (interface{}, error) {
+func (im *InstanceMetadata) getItem(key string) (interface{}, bool, error) {
 	err := im.parse()
 	if err != nil {
-		return "", fmt.Errorf("parsing error: ", err.Error())
+		return "", false, fmt.Errorf("parsing error: ", err.Error())
 	}
-	return im.parsed[key], nil
+	val, present := im.parsed[key]
+	return val, present, nil
 }
 
 // GetString pulls a value cast as a string. Swallows panics from type
@@ -59,7 +60,10 @@ func (im *InstanceMetadata) GetString(key string) (s string, err error) {
 			err = fmt.Errorf("failed to cast interface to string")
 		}
 	}()
-	v, err := im.getItem(key)
+	v, prs, err := im.getItem(key)
+	if !prs {
+		return "", err
+	}
 	return v.(string), err
 }
 
@@ -98,7 +102,10 @@ func (im *InstanceMetadata) GetFloat64(key string) (f float64, err error) {
 			err = fmt.Errorf("failed to cast interface to float64")
 		}
 	}()
-	v, err := im.getItem(key)
+	v, prs, err := im.getItem(key)
+	if !prs {
+		return 0.0, err
+	}
 	return v.(float64), err
 }
 
@@ -111,6 +118,9 @@ func (im *InstanceMetadata) GetBool(key string) (b bool, err error) {
 			err = fmt.Errorf("failed to cast interface to bool")
 		}
 	}()
-	v, err := im.getItem(key)
+	v, prs, err := im.getItem(key)
+	if !prs {
+		return false, err
+	}
 	return v.(bool), err
 }
