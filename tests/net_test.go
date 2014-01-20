@@ -87,7 +87,7 @@ func TestMetadataReading(t *testing.T) {
 		So(err, ShouldBeNil)
 		i := a.Instances[0]
 		_, err = i.Metadata.GetString("SomeProp")
-		So(err, ShouldNotBeNil)
+		So(err, ShouldBeNil)
 	})
 	Convey("Read valid instance metadata", t, func() {
 		a, err := e.GetApp("TESTAPP")
