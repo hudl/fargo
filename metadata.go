@@ -23,7 +23,7 @@ func (im *InstanceMetadata) parse() error {
 	// wrap in a BS xml tag so all metadata tags are pulled
 	if len(im.Raw) == 0 {
 		im.parsed = make(map[string]interface{})
-		log.Warning("Metadata contents has length of 0. Quitting parsing.")
+		log.Warning("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
 	fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
