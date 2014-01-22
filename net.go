@@ -57,8 +57,8 @@ func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 		return nil, err
 	}
 	apps := map[string]*Application{}
-	for _, app := range v.Applications {
-		apps[app.Name] = &app
+	for i, a := range v.Applications {
+		apps[a.Name] = &v.Applications[i]
 	}
 	if rcode > 299 || rcode < 200 {
 		log.Warning("Non-200 rcode of %d", rcode)
