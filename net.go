@@ -25,7 +25,7 @@ func (e *EurekaConnection) GetApp(name string) (Application, error) {
 	}
 	if rcode == 404 {
 		log.Error("application %s not found (received 404)", name)
-		return Application{}, fmt.Errorf("application %s not found (received 404)", name)
+		return Application{}, AppNotFoundError{specific: name}
 	}
 	var v Application
 	err = xml.Unmarshal(out, &v)
