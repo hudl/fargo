@@ -47,13 +47,13 @@ func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 	log.Debug("Getting all apps from url %s", reqURL)
 	out, rcode, err := getXML(reqURL)
 	if err != nil {
-		log.Error("Couldn't get XML.", err.Error())
+		log.Error("Couldn't get XML: " + err.Error())
 		return nil, err
 	}
 	var v GetAppsResponse
 	err = xml.Unmarshal(out, &v)
 	if err != nil {
-		log.Error("Unmarshalling error", err.Error())
+		log.Error("Unmarshalling error: " + err.Error())
 		return nil, err
 	}
 	apps := map[string]*Application{}
