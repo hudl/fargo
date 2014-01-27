@@ -87,6 +87,8 @@ func netReq(req *http.Request) ([]byte, int, error) {
 			log.Warning("Retrying after temporary network failure, error: %s",
 				nerr.Error())
 			time.Sleep(10)
+		} else {
+			break
 		}
 	}
 	if err != nil {
