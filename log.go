@@ -7,4 +7,3 @@ import (
 )
 
 var log = logging.MustGetLogger("fargo")
-
