@@ -33,7 +33,7 @@ func putKV(reqURL string, pairs map[string]string) ([]byte, int, error) {
 		params.Add(k, v)
 	}
 	parameterizedURL := reqURL + "?" + params.Encode()
-	log.Notice("Sending metadata request with URL %s", parameterizedURL)
+	log.Notice("Sending KV request with URL %s", parameterizedURL)
 	req, err := http.NewRequest("PUT", parameterizedURL, nil)
 	if err != nil {
 		log.Error("Could not create PUT %s with Error: %s", reqURL, err.Error())
@@ -59,6 +59,20 @@ func getXML(reqURL string) ([]byte, int, error) {
 		return nil, rcode, err
 	}
 	return body, rcode, nil
+}
+
+func deleteReq(reqURL string) (int, error) {
+	req, err := http.NewRequest("DELETE", reqURL, nil)
+	if err != nil {
+		log.Error("Could not create DELETE %s with Error: %s", reqURL, err.Error())
+		return -1, err
+	}
+	_, rcode, err := netReq(req)
+	if err != nil {
+		log.Error("Could not complete DELETE %s with Error: %s", reqURL, err.Error())
+		return rcode, err
+	}
+	return rcode, nil
 }
 
 func reqXML(req *http.Request) ([]byte, int, error) {

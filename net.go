@@ -94,8 +94,8 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	return nil
 }
 
-// RegisterInstance will register the relevant Instance with eureka but DOES
-// NOT automatically send heartbeats. See HeartBeatInstance for that
+// RegisterInstance will register the given Instance with eureka if it is not already registered,
+// but DOES NOT automatically send heartbeats. See HeartBeatInstance for that
 // functionality
 func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], ins.App)
@@ -112,7 +112,15 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 		return nil
 	}
 	log.Notice("Instance=%s not yet registered with App=%s. Registering.", ins.HostName, ins.App)
+	return e.ReregisterInstance(ins)
+}
 
+// ReregisterInstance will register the given Instance with eureka but DOES
+// NOT automatically send heartbeats. See HeartBeatInstance for that
+// functionality
+func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
+	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], ins.App)
+	reqURL := e.generateURL(slug)
 	out, err := xml.Marshal(ins)
 	if err != nil {
 		// marshal the xml *with* indents so it's readable if there's an error
@@ -127,11 +135,52 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	}
 	if rcode != 204 {
 		log.Warning("HTTP returned %d registering Instance=%s App=%s Body=\"%s\"", rcode, ins.HostName, ins.App, string(body))
-		return fmt.Errorf("http returned %d possible failure creating instance\n", rcode)
+		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
 	}
 
 	body, rcode, err = getXML(reqURL + "/" + ins.HostName)
 	xml.Unmarshal(body, ins)
+	return nil
+}
+
+// DeregisterInstance will register the given Instance with eureka but DOES
+// NOT automatically send heartbeats. See HeartBeatInstance for that
+// functionality
+func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	reqURL := e.generateURL(slug)
+	log.Debug("Deregistering instance with url %s", reqURL)
+
+	rcode, err := deleteReq(reqURL)
+	if err != nil {
+		log.Error("Could not complete deregistration Error: ", err.Error())
+		return err
+	}
+	if rcode != 204 {
+		log.Warning("HTTP returned %d deregistering Instance=%s App=%s", rcode, ins.HostName, ins.App)
+		return fmt.Errorf("http returned %d possible failure deregistering instance\n", rcode)
+	}
+
+	return nil
+}
+
+// UpdateInstanceStatus updates the status of a given instance with eureka.
+func (e EurekaConnection) UpdateInstanceStatus(ins *Instance, status StatusType) error {
+	slug := fmt.Sprintf("%s/%s/%s/status", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	reqURL := e.generateURL(slug)
+
+	params := map[string]string{"value": string(status)}
+
+	log.Debug("Updating instance status url=%s value=%s", reqURL, status)
+	body, rcode, err := putKV(reqURL, params)
+	if err != nil {
+		log.Error("Could not complete update with Error: ", err.Error())
+		return err
+	}
+	if rcode < 200 || rcode >= 300 {
+		log.Warning("HTTP returned %d updating status Instance=%s App=%s Body=\"%s\"", rcode, ins.HostName, ins.App, string(body))
+		return fmt.Errorf("http returned %d possible failure updating instance status ", rcode)
+	}
 	return nil
 }
 

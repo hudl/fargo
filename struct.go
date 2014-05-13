@@ -39,9 +39,11 @@ type StatusType string
 
 // Supported statuses
 const (
-	UP       StatusType = "UP"
-	DOWN     StatusType = "DOWN"
-	STARTING StatusType = "STARTING"
+	UP           StatusType = "UP"
+	DOWN         StatusType = "DOWN"
+	STARTING     StatusType = "STARTING"
+	OUTOFSERVICE StatusType = "OUT_OF_SERVICE"
+	UNKNOWN      StatusType = "UNKNOWN"
 )
 
 // Datacenter names
