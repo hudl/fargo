@@ -6,6 +6,18 @@ Netflix Eureka client in golang. Named for the show Eureka.
 c = fargo.NewConn("http", "127.0.0.1", "8080")
 c.GetApps() // returns a map[String]fargo.Application
 ```
+
+# Testing
+
+To run the tests, first you'll need to install [vagrant](http://vagrantup.com)
+for your platform. Then run `vagrant up` to create the virtual machines for the
+eureka server tests.
+
+The tests may need to be run a couple of times to allow changes to propagate
+between the two eureka servers. To run them, use `go test ./...` from the root
+of the repository. If the tests are failing, try running them again
+approximately 30 seconds later.
+
 # Known Issues
 
 Until [this PR](https://github.com/mitchellh/vagrant/pull/2742) is in an
