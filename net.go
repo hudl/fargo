@@ -123,7 +123,7 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	reqURL := e.generateURL(slug)
 	out, err := xml.Marshal(ins)
 	if err != nil {
-		// marshal the xml *with* indents so it's readable if there's an error
+		// marshal the xml *with* indents so it's readable in the error message
 		out, _ := xml.MarshalIndent(ins, "", "    ")
 		log.Error("Error marshalling XML Instance=%s App=%s. Error:\"%s\" XML body=\"%s\"", err.Error(), ins.HostName, ins.App, string(out))
 		return err
@@ -138,14 +138,14 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
 	}
 
+	// read back our registration to ensure that it stuck  TODO(cq) is this necessary?
 	body, rcode, err = getXML(reqURL + "/" + ins.HostName)
 	xml.Unmarshal(body, ins)
 	return nil
 }
 
-// DeregisterInstance will register the given Instance with eureka but DOES
-// NOT automatically send heartbeats. See HeartBeatInstance for that
-// functionality
+// DeregisterInstance will deregister the given Instance from eureka. This is good practice
+// to do before exiting or otherwise going off line.
 func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
 	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
 	reqURL := e.generateURL(slug)
