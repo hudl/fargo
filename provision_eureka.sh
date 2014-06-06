@@ -4,8 +4,6 @@ sysctl -w net.ipv6.conf.all.disable_ipv6=1
 ln -s /opt/VBoxGuestAdditions-4.3.10/lib/VBoxGuestAdditions /usr/lib/VBoxGuestAdditions || true
 systemctl stop firewalld.service
 systemctl disable firewalld.service
-#yum localinstall --nogpgcheck -y /vagrant/jdk-7u45-linux-x64.rpm
-#yum install --nogpgcheck -y tomcat gradle git tomcat-admin-webapps tomcat-native jersey log4j htop vim
 yum install --nogpgcheck -y unzip tomcat tomcat-admin-webapps htop vim
 
 echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4" > /etc/hosts
