@@ -138,7 +138,7 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
 	}
 
-	// read back our registration to ensure that it stuck  TODO(cq) is this necessary?
+	// read back our registration to ensure that it stuck
 	body, rcode, err = getXML(reqURL + "/" + ins.HostName)
 	xml.Unmarshal(body, ins)
 	return nil
