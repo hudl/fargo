@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 sysctl -w net.ipv6.conf.all.disable_ipv6=1
+# this is for vbox guest additions v 4.3.10, may not be necessary on your machine http://stackoverflow.com/a/22723807
+ln -s /opt/VBoxGuestAdditions-4.3.10/lib/VBoxGuestAdditions /usr/lib/VBoxGuestAdditions || true
 systemctl stop firewalld.service
 systemctl disable firewalld.service
 #yum localinstall --nogpgcheck -y /vagrant/jdk-7u45-linux-x64.rpm
 #yum install --nogpgcheck -y tomcat gradle git tomcat-admin-webapps tomcat-native jersey log4j htop vim
-yum install --nogpgcheck -y tomcat gradle git tomcat-admin-webapps htop vim
+yum install --nogpgcheck -y unzip tomcat tomcat-admin-webapps htop vim
 
 echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4" > /etc/hosts
 echo "<?xml version='1.0' encoding='utf-8'?>
@@ -19,10 +21,11 @@ echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdom
 172.16.0.22 node2 node2.localdomain
 " > /etc/hosts
 
-cp /vagrant/eureka-server-1.1.*.war /var/lib/tomcat/webapps/eureka.war
-chmod a+x /var/lib/tomcat/webapps/eureka.war
-#cd /eureka-repo
-#./gradlew clean build
+wget -O /var/lib/tomcat/webapps/eureka.zip https://netflixoss.ci.cloudbees.com/job/eureka-master/lastSuccessfulBuild/artifact/eureka-server/build/libs/eureka-server-1.1.135-SNAPSHOT.war
+unzip -o -d /var/lib/tomcat/webapps/eureka /var/lib/tomcat/webapps/eureka.zip
+cp /vagrant/tests/eureka_properties/*.properties /var/lib/tomcat/webapps/eureka/WEB-INF/classes/
+chown -R tomcat:tomcat /var/lib/tomcat/webapps/eureka
+rm -f /var/lib/tomcat/webapps/eureka.zip
 
 service tomcat restart
 chkconfig tomcat on
