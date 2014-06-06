@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+func TestConnectionCreation(t *testing.T) {
+	Convey("Pull applications", t, func() {
+		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
+		So(err, ShouldBeNil)
+		e := fargo.NewConnFromConfig(cfg)
+		apps, err := e.GetApps()
+		So(err, ShouldBeNil)
+		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
+	})
+}
+
 func TestGetApps(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
 	Convey("Pull applications", t, func() {
@@ -67,21 +78,98 @@ func TestRegistration(t *testing.T) {
 	})
 }
 
-func TestConnectionCreation(t *testing.T) {
-	Convey("Pull applications", t, func() {
-		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
-		So(err, ShouldBeNil)
-		e := fargo.NewConnFromConfig(cfg)
-		apps, err := e.GetApps()
-		So(err, ShouldBeNil)
-		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
+func TestReregistration(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
+	Convey("Register a TESTAPP instance", t, func() {
+		Convey("Instance registers correctly", func() {
+			err := e.RegisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+	})
+	Convey("Reregister the TESTAPP instance", t, func() {
+		Convey("Instance reregisters correctly", func() {
+			err := e.ReregisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+		Convey("Instance can check in", func() {
+			err := e.HeartBeatInstance(&i)
+			So(err, ShouldBeNil)
+		})
+	})
+}
+
+func DontTestDeregistration(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
+	Convey("Register a TESTAPP instance", t, func() {
+		Convey("Instance registers correctly", func() {
+			err := e.RegisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+	})
+	Convey("Deregister the TESTAPP instance", t, func() {
+		Convey("Instance deregisters correctly", func() {
+			err := e.DeregisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+		Convey("Instance cannot check in", func() {
+			err := e.HeartBeatInstance(&i)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestUpdateStatus(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
+	Convey("Register an instance to TESTAPP", t, func() {
+		Convey("Instance registers correctly", func() {
+			err := e.RegisterInstance(&i)
+			So(err, ShouldBeNil)
+		})
+	})
+	Convey("Update an instance status", t, func() {
+		Convey("Instance updates to OUT_OF_SERVICE correctly", func() {
+			err := e.UpdateInstanceStatus(&i, fargo.OUTOFSERVICE)
+			So(err, ShouldBeNil)
+		})
+		Convey("Instance updates to UP corectly", func() {
+			err := e.UpdateInstanceStatus(&i, fargo.UP)
+			So(err, ShouldBeNil)
+		})
 	})
 }
 
 func TestMetadataReading(t *testing.T) {
-	cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
-	So(err, ShouldBeNil)
-	e := fargo.NewConnFromConfig(cfg)
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
 	Convey("Read empty instance metadata", t, func() {
 		a, err := e.GetApp("EUREKA")
 		So(err, ShouldBeNil)
