@@ -100,11 +100,7 @@ included [vagrant](http://vagrantup.com) specs.
 
 The Vagrantfile in this repo will set up a two-server eureka cluster using the
 OpsCode bento boxes. By default, the VMs are named node1.localdomain and
-node2.localdomain. They'll be automatically provisioned so long as you've
-already configured/built eureka.
-
-To build eureka `git clone https://github.com/Netflix/eureka.git && cd eureka
-&& git checkout 1.1.118 && ./gradlew clean build`
+node2.localdomain. They'll be provisioned and eureka will start automatically.
 
 # MIT License
 
