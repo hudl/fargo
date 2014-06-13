@@ -63,11 +63,9 @@ func findTXT(fqdn string) ([]string, error) {
 var dnsServerAddr string
 
 func init() {
-	// this is all a very verbose way
+	// Find a DNS server using the OS resolv.conf
 	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
 	dnsServerAddr = config.Servers[0] + ":" + config.Port
-	//findTXT("txt.us-east-1.app.hudl.com.")
-	//findTXT("txt.us-east-1.discoverytest.netflix.net.")
 }
 
 // defaults to us-east-1 if there's a problem
