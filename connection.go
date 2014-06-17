@@ -15,7 +15,7 @@ func init() {
 // balancing scheme.
 // TODO: Make this not just pick a random one.
 func (e *EurekaConnection) SelectServiceURL() string {
-	if len(e.discoveryTtl) > 0 {
+	if e.DNSDiscovery && len(e.discoveryTtl) > 0 {
 		<-e.discoveryTtl
 		servers, ttl, err := discoverDNS(e.DiscoveryZone)
 		if err != nil {
