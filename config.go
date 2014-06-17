@@ -30,6 +30,7 @@ type eureka struct {
 	InTheCloud            bool     // default false
 	ConnectTimeoutSeconds int      // default 10s
 	UseDNSForServiceUrls  bool     // default false
+	DNSDiscoveryZone      string   // default ""
 	ServerDNSName         string   // default ""
 	ServiceUrls           []string // default []
 	ServerPort            int      // default 7001

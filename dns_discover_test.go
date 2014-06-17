@@ -5,11 +5,12 @@ package fargo
 import (
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+	"time"
 )
 
 func TestGetNXDomain(t *testing.T) {
 	Convey("Given nonexistent domain nxd.local.", t, func() {
-		resp, err := findTXT("nxd.local.")
+		resp, _, err := findTXT("nxd.local.")
 		So(err, ShouldNotBeNil)
 		So(len(resp), ShouldEqual, 0)
 	})
@@ -19,8 +20,9 @@ func TestGetNetflixTestDomain(t *testing.T) {
 	Convey("Given domain txt.us-east-1.discoverytest.netflix.net.", t, func() {
 		// TODO: use a mock DNS server to eliminate dependency on netflix
 		// keeping their discoverytest domain up
-		resp, err := findTXT("txt.us-east-1.discoverytest.netflix.net.")
+		resp, ttl, err := findTXT("txt.us-east-1.discoverytest.netflix.net.")
 		So(err, ShouldBeNil)
+		So(ttl, ShouldEqual, 60*time.Second)
 		So(len(resp), ShouldEqual, 3)
 		Convey("And the contents are zone records", func() {
 			expected := map[string]bool{
@@ -34,7 +36,7 @@ func TestGetNetflixTestDomain(t *testing.T) {
 			}
 			Convey("And the zone records contain instances", func() {
 				for _, record := range resp {
-					servers, err := findTXT("txt." + record + ".")
+					servers, _, err := findTXT("txt." + record + ".")
 					So(err, ShouldBeNil)
 					So(len(servers) >= 1, ShouldEqual, true)
 					// servers should be EC2 DNS names
@@ -45,7 +47,7 @@ func TestGetNetflixTestDomain(t *testing.T) {
 	})
 	Convey("Autodiscover discoverytest.netflix.net.", t, func() {
 		servers, ttl, err := discoverDNS("discoverytest.netflix.net")
-		_ = ttl
+		So(ttl, ShouldEqual, 60*time.Second)
 		So(err, ShouldBeNil)
 		So(len(servers), ShouldEqual, 4)
 		Convey("Servers discovered should all be EC2 DNS names", func() {

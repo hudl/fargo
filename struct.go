@@ -19,6 +19,9 @@ type EurekaConnection struct {
 	PollInterval   time.Duration
 	PreferSameZone bool
 	Retries        int
+	DNSDiscovery   bool
+	DiscoveryZone  string
+	discoveryTtl   <-chan time.Time
 }
 
 // GetAppsResponse lets us deserialize the eureka/v2/apps response XML

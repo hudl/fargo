@@ -58,6 +58,9 @@ func findTXT(fqdn string) ([]string, time.Duration, error) {
 	}
 	txt := response.Answer[0].(*dns.TXT)
 	ttl := response.Answer[0].Header().Ttl
+	if ttl < 60 {
+		ttl = 60
+	}
 
 	return txt.Txt, time.Duration(ttl) * time.Second, nil
 }

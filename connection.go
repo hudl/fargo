@@ -15,6 +15,15 @@ func init() {
 // balancing scheme.
 // TODO: Make this not just pick a random one.
 func (e *EurekaConnection) SelectServiceURL() string {
+	if len(e.discoveryTtl) > 0 {
+		<-e.discoveryTtl
+		servers, ttl, err := discoverDNS(e.DiscoveryZone)
+		if err != nil {
+			return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
+		}
+		e.discoveryTtl = time.After(ttl)
+		e.ServiceUrls = servers
+	}
 	return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
 }
 
@@ -32,10 +41,6 @@ func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 // NewConnFromConfig will, given a Config struct, return a connection based on
 // those options
 func NewConnFromConfig(conf Config) (c EurekaConnection) {
-	if conf.Eureka.UseDNSForServiceUrls {
-		//TODO: Read service urls from DNS TXT records
-		log.Critical("ERROR: UseDNSForServiceUrls option unsupported.")
-	}
 	c.ServiceUrls = conf.Eureka.ServiceUrls
 	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDNSName) > 0 {
 		c.ServiceUrls = []string{conf.Eureka.ServerDNSName}
@@ -43,6 +48,11 @@ func NewConnFromConfig(conf Config) (c EurekaConnection) {
 	c.Timeout = time.Duration(conf.Eureka.ConnectTimeoutSeconds) * time.Second
 	c.PollInterval = time.Duration(conf.Eureka.PollIntervalSeconds) * time.Second
 	c.PreferSameZone = conf.Eureka.PreferSameZone
+	if conf.Eureka.UseDNSForServiceUrls {
+		log.Warning("UseDNSForServiceUrls is an experimental option")
+		c.DNSDiscovery = true
+		c.DiscoveryZone = conf.Eureka.DNSDiscoveryZone
+	}
 	return c
 }
 
