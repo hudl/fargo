@@ -3,6 +3,7 @@ package fargo
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/clbanning/x2j"
 )
@@ -12,7 +13,7 @@ func (a *Application) ParseAllMetadata() error {
 	for _, instance := range a.Instances {
 		err := instance.Metadata.parse()
 		if err != nil {
-			log.Error("Failed parsing metadata for Instance=%s of Application=%s: ", instance.HostName, a.Name, err.Error())
+			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s", instance.HostName, a.Name, err.Error())
 			return err
 		}
 	}
@@ -20,19 +21,30 @@ func (a *Application) ParseAllMetadata() error {
 }
 
 func (im *InstanceMetadata) parse() error {
-	// wrap in a BS xml tag so all metadata tags are pulled
 	if len(im.Raw) == 0 {
 		im.parsed = make(map[string]interface{})
 		log.Debug("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
-	fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
-	parsedDoc, err := x2j.ByteDocToMap(fullDoc, true)
-	if err != nil {
-		log.Error("Error unmarshalling: ", err.Error())
-		return fmt.Errorf("error unmarshalling: ", err.Error())
+	//log.Debug("InstanceMetadata.parse: %s", im.Raw)
+
+	if len(im.Raw) > 0 && im.Raw[0] == '{' {
+		// JSON
+		err := json.Unmarshal(im.Raw, &im.parsed)
+		if err != nil {
+			log.Error("Error unmarshalling: %s", err.Error())
+			return fmt.Errorf("error unmarshalling: %s", err.Error())
+		}
+	} else {
+		// XML: wrap in a BS xml tag so all metadata tags are pulled
+		fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
+		parsedDoc, err := x2j.ByteDocToMap(fullDoc, true)
+		if err != nil {
+			log.Error("Error unmarshalling: %s", err.Error())
+			return fmt.Errorf("error unmarshalling: %s", err.Error())
+		}
+		im.parsed = parsedDoc["d"].(map[string]interface{})
 	}
-	im.parsed = parsedDoc["d"].(map[string]interface{})
 	return nil
 }
 
@@ -44,7 +56,7 @@ func (im *InstanceMetadata) GetMap() map[string]interface{} {
 func (im *InstanceMetadata) getItem(key string) (interface{}, bool, error) {
 	err := im.parse()
 	if err != nil {
-		return "", false, fmt.Errorf("parsing error: ", err.Error())
+		return "", false, fmt.Errorf("parsing error: %s", err.Error())
 	}
 	val, present := im.parsed[key]
 	return val, present, nil
