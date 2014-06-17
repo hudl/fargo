@@ -13,7 +13,8 @@ func (a *Application) ParseAllMetadata() error {
 	for _, instance := range a.Instances {
 		err := instance.Metadata.parse()
 		if err != nil {
-			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s", instance.HostName, a.Name, err.Error())
+			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s", 
+				instance.HostName, a.Name, err.Error())
 			return err
 		}
 	}
@@ -26,7 +27,7 @@ func (im *InstanceMetadata) parse() error {
 		log.Debug("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
-	//log.Debug("InstanceMetadata.parse: %s", im.Raw)
+	metadataLog.Debug("InstanceMetadata.parse: %s", im.Raw)
 
 	if len(im.Raw) > 0 && im.Raw[0] == '{' {
 		// JSON

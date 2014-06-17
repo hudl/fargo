@@ -4,7 +4,6 @@ package fargo
 
 import (
 	"encoding/json"
-	//"fmt"
 	"strconv"
 )
 
@@ -19,20 +18,20 @@ type getAppsResponseSingle struct {
 // UnmarshalJSON is a custom JSON unmarshaler for GetAppsResponse to deal with
 // sometimes non-wrapped Application arrays when there is only a single Application item.
 func (r *GetAppsResponse) UnmarshalJSON(b []byte) error {
-	//fmt.Printf("GetAppsResponse.UnmarshalJSON b:%s\n", string(b))
+	marshalLog.Debug("GetAppsResponse.UnmarshalJSON b:%s\n", string(b))
 	var err error
 
 	// Normal array case
 	var ra getAppsResponseArray
 	if err = json.Unmarshal(b, &ra); err == nil {
-		//fmt.Printf("GetAppsResponse.UnmarshalJSON ra:%+v\n", ra)
+		marshalLog.Debug("GetAppsResponse.UnmarshalJSON ra:%+v\n", ra)
 		*r = GetAppsResponse(ra)
 		return nil
 	}
 	// Bogus non-wrapped case
 	var rs getAppsResponseSingle
 	if err = json.Unmarshal(b, &rs); err == nil {
-		//fmt.Printf("GetAppsResponse.UnmarshalJSON rs:%+v\n", rs)
+		marshalLog.Debug("GetAppsResponse.UnmarshalJSON rs:%+v\n", rs)
 		r.Applications = make([]*Application, 1, 1)
 		r.Applications[0] = rs.Application
 		r.AppsHashcode = rs.AppsHashcode
@@ -52,13 +51,13 @@ type applicationSingle struct {
 // UnmarshalJSON is a custom JSON unmarshaler for Application to deal with
 // sometimes non-wrapped Instance array when there is only a single Instance item.
 func (a *Application) UnmarshalJSON(b []byte) error {
-	//fmt.Printf("Application.UnmarshalJSON b:%s\n", string(b))
+	marshalLog.Debug("Application.UnmarshalJSON b:%s\n", string(b))
 	var err error
 
 	// Normal array case
 	var aa applicationArray
 	if err = json.Unmarshal(b, &aa); err == nil {
-		//fmt.Printf("Application.UnmarshalJSON aa:%+v\n", aa)
+		marshalLog.Debug("Application.UnmarshalJSON aa:%+v\n", aa)
 		*a = Application(aa)
 		return nil
 	}
@@ -66,7 +65,7 @@ func (a *Application) UnmarshalJSON(b []byte) error {
 	// Bogus non-wrapped case
 	var as applicationSingle
 	if err = json.Unmarshal(b, &as); err == nil {
-		//fmt.Printf("Application.UnmarshalJSON as:%+v\n", as)
+		marshalLog.Debug("Application.UnmarshalJSON as:%+v\n", as)
 		a.Name = as.Name
 		a.Instances = make([]*Instance, 1, 1)
 		a.Instances[0] = as.Instance
@@ -84,12 +83,10 @@ func (i *Instance) UnmarshalJSON(b []byte) error {
 	var err error
 	var ii instance
 	if err = json.Unmarshal(b, &ii); err == nil {
-		//fmt.Printf("Instance.UnmarshalJSON ii:%+v\n", ii)
+		marshalLog.Debug("Instance.UnmarshalJSON ii:%+v\n", ii)
 		*i = Instance(ii)
 		i.Port, _ = strconv.Atoi(ii.PortJ.Number)
 		i.SecurePort, _ = strconv.Atoi(ii.SecurePortJ.Number)
-		//i.Port = ii.PortJ.Number
-		//i.SecurePort = ii.SecurePortJ.Number
 		return nil
 	}
 	return err

@@ -93,7 +93,8 @@ type Instance struct {
 }
 
 // Port struct used for JSON [un]marshaling only
-type Port struct { // json port looks like: "port":{"@enabled":"true", "$":"7101"},
+// looks like: "port":{"@enabled":"true", "$":"7101"},
+type Port struct {
 	Number  string `json:"$"`
 	Enabled string `json:"@enabled"`
 }

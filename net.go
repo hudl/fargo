@@ -19,7 +19,7 @@ func (e *EurekaConnection) marshal(v interface{}) ([]byte, error) {
 	if e.UseJson {
 		out, err := json.Marshal(v)
 		if err != nil {
-			// marshal the xml *with* indents so it's readable in the error message
+			// marshal the JSON *with* indents so it's readable in the error message
 			out, _ := json.MarshalIndent(v, "", "    ")
 			log.Error("Error marshalling JSON value=%v. Error:\"%s\" JSON body=\"%s\"", v, err.Error(), string(out))
 			return nil, err
@@ -28,7 +28,7 @@ func (e *EurekaConnection) marshal(v interface{}) ([]byte, error) {
 	} else {
 		out, err := xml.Marshal(v)
 		if err != nil {
-			// marshal the xml *with* indents so it's readable in the error message
+			// marshal the XML *with* indents so it's readable in the error message
 			out, _ := xml.MarshalIndent(v, "", "    ")
 			log.Error("Error marshalling XML value=%v. Error:\"%s\" JSON body=\"%s\"", v, err.Error(), string(out))
 			return nil, err
@@ -72,8 +72,8 @@ func (e *EurekaConnection) GetApp(name string) (*Application, error) {
 	return v, nil
 }
 
-func (e *EurekaConnection) readAppInto(name string, app *Application) error {
-	tapp, err := e.GetApp(name)
+func (e *EurekaConnection) readAppInto(app *Application) error {
+	tapp, err := e.GetApp(app.Name)
 	if err == nil {
 		*app = *tapp
 	}
@@ -167,19 +167,38 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
 	}
 
-	// read back our registration to ensure that it stuck
-	// TODO(cq) is this really needed? Especially the unmarshal over our existing struct...
-	/*
-		body, rcode, err = getBody(reqURL + "/" + ins.HostName, e.UseJson)
-		if e.UseJson {
-			fmt.Printf("ReregisterInstance, reread JSON: %+v: %s\n", ins, string(body))
-			// TODO: would need to unmarshal RegisterInstanceJson here instead...
-			return json.Unmarshal(body, ins)
-		} else {
-			return xml.Unmarshal(body, ins)
-		}
-	*/
+	// read back our registration to pick up eureka-supplied values
+	e.readInstanceInto(ins)
+
 	return nil
+}
+
+// GetInstance gets an Instance from eureka given its app and hostname.
+func (e *EurekaConnection) GetInstance(app, hostname string) (*Instance, error) {
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], app, hostname)
+	reqURL := e.generateURL(slug)
+	log.Debug("Getting instance with url %s", reqURL)
+	body, _, err := getBody(reqURL, e.UseJson)
+	if err != nil {
+		return nil, err
+	}
+	var ins *Instance
+	if e.UseJson {
+		var ij RegisterInstanceJson
+		err = json.Unmarshal(body, &ij)
+		ins = ij.Instance
+	} else {
+		err = xml.Unmarshal(body, &ins)
+	}
+	return ins, err
+}
+
+func (e *EurekaConnection) readInstanceInto(ins *Instance) error {
+	tins, err := e.GetInstance(ins.App, ins.HostName)
+	if err == nil {
+		*ins = *tins
+	}
+	return err
 }
 
 // DeregisterInstance will deregister the given Instance from eureka. This is good practice

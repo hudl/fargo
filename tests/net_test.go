@@ -3,7 +3,6 @@ package fargo_test
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
-	"fmt"
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -97,26 +96,28 @@ func TestReregistration(t *testing.T) {
 		SecureVipAddress: "127.0.0.10",
 		Status:           fargo.UP,
 	}
-	//fmt.Printf("\nTestReregistration0: ins:%s/%s\n", i.App, i.HostName)
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Register a TESTAPP instance", t, func() {
 			Convey("Instance registers correctly", func() {
-				//fmt.Printf("\nTestReregistration1: ins:%s/%s\n", i.App, i.HostName)
 				err := e.RegisterInstance(&i)
 				So(err, ShouldBeNil)
 			})
 		})
 		Convey("Reregister the TESTAPP instance", t, func() {
-			//fmt.Printf("\nTestReregistration2: ins:%s/%s\n", i.App, i.HostName)
 			Convey("Instance reregisters correctly", func() {
 				err := e.ReregisterInstance(&i)
 				So(err, ShouldBeNil)
 			})
-			fmt.Printf("\nTestReregistration3: ins:%s/%s\n", i.App, i.HostName)
 			Convey("Instance can check in", func() {
 				err := e.HeartBeatInstance(&i)
 				So(err, ShouldBeNil)
+			})
+			Convey("Instance can be gotten correctly", func() {
+				ii, err := e.GetInstance(i.App, i.HostName)
+				So(err, ShouldBeNil)
+				So(ii.App, ShouldEqual, i.App)
+				So(ii.HostName, ShouldEqual, i.HostName)
 			})
 		})
 	}
