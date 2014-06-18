@@ -235,7 +235,7 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	log.Debug("Updating instance metadata url=%s metadata=%s", reqURL, params)
 	body, rcode, err := putKV(reqURL, params)
 	if err != nil {
-		log.Error("Could not complete update, error: ", err.Error())
+		log.Error("Could not complete update, error: %s", err.Error())
 		return err
 	}
 	if rcode < 200 || rcode >= 300 {

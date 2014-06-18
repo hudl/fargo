@@ -19,16 +19,16 @@ func TestJsonMarshal(t *testing.T) {
 			var v fargo.GetAppsResponseJson
 			err = json.Unmarshal(blob, &v)
 
-			// Handy dump for debugging funky JSON
-			fmt.Printf("v:\n%+v\n", v.Response.Applications)
-			for _, app := range v.Response.Applications {
-				fmt.Printf("  %+v\n", *app)
-				for _, ins := range app.Instances {
-					fmt.Printf("    %+v\n", *ins)
-				}
-			}
-
 			if err != nil {
+				// Handy dump for debugging funky JSON
+				fmt.Printf("v:\n%+v\n", v.Response.Applications)
+				for _, app := range v.Response.Applications {
+					fmt.Printf("  %+v\n", *app)
+					for _, ins := range app.Instances {
+						fmt.Printf("    %+v\n", *ins)
+					}
+				}
+
 				// Print a little more details when there are unmarshalling problems
 				switch ute := err.(type) {
 				case *json.UnmarshalTypeError:

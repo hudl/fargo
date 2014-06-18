@@ -85,11 +85,19 @@ func (i *Instance) UnmarshalJSON(b []byte) error {
 	if err = json.Unmarshal(b, &ii); err == nil {
 		marshalLog.Debug("Instance.UnmarshalJSON ii:%+v\n", ii)
 		*i = Instance(ii)
-		i.Port, _ = strconv.Atoi(ii.PortJ.Number)
-		i.SecurePort, _ = strconv.Atoi(ii.SecurePortJ.Number)
+		i.Port = parsePort(ii.PortJ.Number)
+		i.SecurePort = parsePort(ii.SecurePortJ.Number)
 		return nil
 	}
 	return err
+}
+
+func parsePort(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		log.Warning("Invalid port error: %s", err.Error())
+	}
+	return n
 }
 
 // UnmarshalJSON is a custom JSON unmarshaler for InstanceMetadata to handle squirreling away
