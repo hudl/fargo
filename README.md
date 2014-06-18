@@ -96,11 +96,21 @@ your issue or post repro steps to the issues on this repository. The tests
 require that you have a eureka install and are designed to run against the
 included [vagrant](http://vagrantup.com) specs.
 
+## Verifying Releases
+
+We're on semver and tag releases accordingly. The releases are signed and can
+be verified with `git tag --verify vA.B.C`.
+
 ## Using Vagrant
 
 The Vagrantfile in this repo will set up a two-server eureka cluster using the
 OpsCode bento boxes. By default, the VMs are named node1.localdomain and
 node2.localdomain. They'll be provisioned and eureka will start automatically.
+
+# Contributors
+
+* Ryan S. Brown (ryansb)
+* Carl Quinn (cquinn)
 
 # MIT License
 
