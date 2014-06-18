@@ -13,7 +13,7 @@ const azURL = "http://169.254.169.254/latest/meta-data/placement/availability-zo
 
 var ErrNotInAWS = fmt.Errorf("Not in AWS")
 
-func discoverDNS(domain string) (servers []string, ttl time.Duration, err error) {
+func discoverDNS(domain string, port int) (servers []string, ttl time.Duration, err error) {
 	r, _ := region()
 
 	// all DNS queries must use the FQDN
@@ -28,11 +28,14 @@ func discoverDNS(domain string) (servers []string, ttl time.Duration, err error)
 	}
 
 	for _, az := range regionRecords {
-		s, _, er := findTXT("txt." + dns.Fqdn(az))
+		instances, _, er := findTXT("txt." + dns.Fqdn(az))
 		if er != nil {
 			continue
 		}
-		servers = append(servers, s...)
+		for _, instance := range instances {
+			// format the service URL
+			servers = append(servers, fmt.Sprintf("http://%s:%s/eureka/v2/", instance, port))
+		}
 	}
 	return
 }

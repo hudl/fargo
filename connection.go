@@ -17,7 +17,7 @@ func init() {
 func (e *EurekaConnection) SelectServiceURL() string {
 	if e.DNSDiscovery && len(e.discoveryTtl) > 0 {
 		<-e.discoveryTtl
-		servers, ttl, err := discoverDNS(e.DiscoveryZone)
+		servers, ttl, err := discoverDNS(e.DiscoveryZone, e.ServicePort)
 		if err != nil {
 			return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
 		}
@@ -42,6 +42,7 @@ func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 // those options
 func NewConnFromConfig(conf Config) (c EurekaConnection) {
 	c.ServiceUrls = conf.Eureka.ServiceUrls
+	c.ServicePort = conf.Eureka.ServerPort
 	if len(c.ServiceUrls) == 0 && len(conf.Eureka.ServerDNSName) > 0 {
 		c.ServiceUrls = []string{conf.Eureka.ServerDNSName}
 	}
