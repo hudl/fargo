@@ -21,23 +21,26 @@ func TestConnectionCreation(t *testing.T) {
 
 func TestGetApps(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
-	Convey("Pull applications", t, func() {
-		a, _ := e.GetApps()
-		So(len(a["EUREKA"].Instances), ShouldEqual, 2)
-	})
-	Convey("Pull single application", t, func() {
-		a, _ := e.GetApp("EUREKA")
-		So(len(a.Instances), ShouldEqual, 2)
-		for idx, ins := range a.Instances {
-			if ins.HostName == "node1.localdomain" {
-				So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.11")
-				So(a.Instances[idx].HostName, ShouldEqual, "node1.localdomain")
-			} else {
-				So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.22")
-				So(a.Instances[idx].HostName, ShouldEqual, "node2.localdomain")
+	for _, j := range []bool{false, true} {
+		e.UseJson = j
+		Convey("Pull applications", t, func() {
+			a, _ := e.GetApps()
+			So(len(a["EUREKA"].Instances), ShouldEqual, 2)
+		})
+		Convey("Pull single application", t, func() {
+			a, _ := e.GetApp("EUREKA")
+			So(len(a.Instances), ShouldEqual, 2)
+			for idx, ins := range a.Instances {
+				if ins.HostName == "node1.localdomain" {
+					So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.11")
+					So(a.Instances[idx].HostName, ShouldEqual, "node1.localdomain")
+				} else {
+					So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.22")
+					So(a.Instances[idx].HostName, ShouldEqual, "node2.localdomain")
+				}
 			}
-		}
-	})
+		})
+	}
 }
 
 func TestRegistration(t *testing.T) {
@@ -52,30 +55,33 @@ func TestRegistration(t *testing.T) {
 		SecureVipAddress: "127.0.0.10",
 		Status:           fargo.UP,
 	}
-	Convey("Fail to heartbeat a non-existent instance", t, func() {
-		j := fargo.Instance{
-			HostName:         "i-6543",
-			Port:             9090,
-			App:              "TESTAPP",
-			IPAddr:           "127.0.0.10",
-			VipAddress:       "127.0.0.10",
-			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
-			SecureVipAddress: "127.0.0.10",
-			Status:           fargo.UP,
-		}
-		err := e.HeartBeatInstance(&j)
-		So(err, ShouldNotBeNil)
-	})
-	Convey("Register an instance to TESTAPP", t, func() {
-		Convey("Instance registers correctly", func() {
-			err := e.RegisterInstance(&i)
-			So(err, ShouldBeNil)
+	for _, j := range []bool{false, true} {
+		e.UseJson = j
+		Convey("Fail to heartbeat a non-existent instance", t, func() {
+			j := fargo.Instance{
+				HostName:         "i-6543",
+				Port:             9090,
+				App:              "TESTAPP",
+				IPAddr:           "127.0.0.10",
+				VipAddress:       "127.0.0.10",
+				DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+				SecureVipAddress: "127.0.0.10",
+				Status:           fargo.UP,
+			}
+			err := e.HeartBeatInstance(&j)
+			So(err, ShouldNotBeNil)
 		})
-		Convey("Instance can check in", func() {
-			err := e.HeartBeatInstance(&i)
-			So(err, ShouldBeNil)
+		Convey("Register an instance to TESTAPP", t, func() {
+			Convey("Instance registers correctly", func() {
+				err := e.RegisterInstance(&i)
+				So(err, ShouldBeNil)
+			})
+			Convey("Instance can check in", func() {
+				err := e.HeartBeatInstance(&i)
+				So(err, ShouldBeNil)
+			})
 		})
-	})
+	}
 }
 
 func TestReregistration(t *testing.T) {
@@ -90,22 +96,31 @@ func TestReregistration(t *testing.T) {
 		SecureVipAddress: "127.0.0.10",
 		Status:           fargo.UP,
 	}
-	Convey("Register a TESTAPP instance", t, func() {
-		Convey("Instance registers correctly", func() {
-			err := e.RegisterInstance(&i)
-			So(err, ShouldBeNil)
+	for _, j := range []bool{false, true} {
+		e.UseJson = j
+		Convey("Register a TESTAPP instance", t, func() {
+			Convey("Instance registers correctly", func() {
+				err := e.RegisterInstance(&i)
+				So(err, ShouldBeNil)
+			})
 		})
-	})
-	Convey("Reregister the TESTAPP instance", t, func() {
-		Convey("Instance reregisters correctly", func() {
-			err := e.ReregisterInstance(&i)
-			So(err, ShouldBeNil)
+		Convey("Reregister the TESTAPP instance", t, func() {
+			Convey("Instance reregisters correctly", func() {
+				err := e.ReregisterInstance(&i)
+				So(err, ShouldBeNil)
+			})
+			Convey("Instance can check in", func() {
+				err := e.HeartBeatInstance(&i)
+				So(err, ShouldBeNil)
+			})
+			Convey("Instance can be gotten correctly", func() {
+				ii, err := e.GetInstance(i.App, i.HostName)
+				So(err, ShouldBeNil)
+				So(ii.App, ShouldEqual, i.App)
+				So(ii.HostName, ShouldEqual, i.HostName)
+			})
 		})
-		Convey("Instance can check in", func() {
-			err := e.HeartBeatInstance(&i)
-			So(err, ShouldBeNil)
-		})
-	})
+	}
 }
 
 func DontTestDeregistration(t *testing.T) {
@@ -150,45 +165,51 @@ func TestUpdateStatus(t *testing.T) {
 		SecureVipAddress: "127.0.0.10",
 		Status:           fargo.UP,
 	}
-	Convey("Register an instance to TESTAPP", t, func() {
-		Convey("Instance registers correctly", func() {
-			err := e.RegisterInstance(&i)
-			So(err, ShouldBeNil)
+	for _, j := range []bool{false, true} {
+		e.UseJson = j
+		Convey("Register an instance to TESTAPP", t, func() {
+			Convey("Instance registers correctly", func() {
+				err := e.RegisterInstance(&i)
+				So(err, ShouldBeNil)
+			})
 		})
-	})
-	Convey("Update an instance status", t, func() {
-		Convey("Instance updates to OUT_OF_SERVICE correctly", func() {
-			err := e.UpdateInstanceStatus(&i, fargo.OUTOFSERVICE)
-			So(err, ShouldBeNil)
+		Convey("Update an instance status", t, func() {
+			Convey("Instance updates to OUT_OF_SERVICE correctly", func() {
+				err := e.UpdateInstanceStatus(&i, fargo.OUTOFSERVICE)
+				So(err, ShouldBeNil)
+			})
+			Convey("Instance updates to UP corectly", func() {
+				err := e.UpdateInstanceStatus(&i, fargo.UP)
+				So(err, ShouldBeNil)
+			})
 		})
-		Convey("Instance updates to UP corectly", func() {
-			err := e.UpdateInstanceStatus(&i, fargo.UP)
-			So(err, ShouldBeNil)
-		})
-	})
+	}
 }
 
 func TestMetadataReading(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
-	Convey("Read empty instance metadata", t, func() {
-		a, err := e.GetApp("EUREKA")
-		So(err, ShouldBeNil)
-		i := a.Instances[0]
-		_, err = i.Metadata.GetString("SomeProp")
-		So(err, ShouldBeNil)
-	})
-	Convey("Read valid instance metadata", t, func() {
-		a, err := e.GetApp("TESTAPP")
-		So(err, ShouldBeNil)
-		So(len(a.Instances), ShouldBeGreaterThan, 0)
-		if len(a.Instances) == 0 {
-			return
-		}
-		i := a.Instances[0]
-		err = e.AddMetadataString(i, "SomeProp", "AValue")
-		So(err, ShouldBeNil)
-		v, err := i.Metadata.GetString("SomeProp")
-		So(err, ShouldBeNil)
-		So(v, ShouldEqual, "AValue")
-	})
+	for _, j := range []bool{false, true} {
+		e.UseJson = j
+		Convey("Read empty instance metadata", t, func() {
+			a, err := e.GetApp("EUREKA")
+			So(err, ShouldBeNil)
+			i := a.Instances[0]
+			_, err = i.Metadata.GetString("SomeProp")
+			So(err, ShouldBeNil)
+		})
+		Convey("Read valid instance metadata", t, func() {
+			a, err := e.GetApp("TESTAPP")
+			So(err, ShouldBeNil)
+			So(len(a.Instances), ShouldBeGreaterThan, 0)
+			if len(a.Instances) == 0 {
+				return
+			}
+			i := a.Instances[0]
+			err = e.AddMetadataString(i, "SomeProp", "AValue")
+			So(err, ShouldBeNil)
+			v, err := i.Metadata.GetString("SomeProp")
+			So(err, ShouldBeNil)
+			So(v, ShouldEqual, "AValue")
+		})
+	}
 }
