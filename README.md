@@ -65,6 +65,7 @@ for {
 * Allow service url distribution via DNS
 * Currently the load balancing is random, and does not give preference to
   servers within a zone.
+* Make releases available on [gopkg.in](http://gopkg.in)
 
 # Hacking
 
