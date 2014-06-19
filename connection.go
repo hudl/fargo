@@ -78,7 +78,7 @@ func (e *EurekaConnection) UpdateApp(app *Application) {
 	go func() {
 		for {
 			log.Notice("Updating app %s", app.Name)
-			err := e.readAppInto(app.Name, app)
+			err := e.readAppInto(app)
 			if err != nil {
 				log.Error("Failure updating %s in goroutine", app.Name)
 			}

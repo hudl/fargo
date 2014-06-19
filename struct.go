@@ -23,19 +23,30 @@ type EurekaConnection struct {
 	DNSDiscovery   bool
 	DiscoveryZone  string
 	discoveryTtl   chan struct{}
+	UseJson        bool
+}
+
+// GetAppsResponseJson lets us deserialize the eureka/v2/apps response JSON--a wrapped GetAppsResponse
+type GetAppsResponseJson struct {
+	Response *GetAppsResponse `json:"applications"`
 }
 
 // GetAppsResponse lets us deserialize the eureka/v2/apps response XML
 type GetAppsResponse struct {
-	VersionDelta int           `xml:"versions__delta"`
-	AppsHashCode string        `xml:"apps__hashcode"`
-	Applications []Application `xml:"application"`
+	Applications  []*Application `xml:"application" json:"application"`
+	AppsHashcode  string         `xml:"apps__hashcode" json:"apps__hashcode"`
+	VersionsDelta int            `xml:"versions__delta" json:"versions__delta"`
+}
+
+// Application deserializeable from Eureka JSON
+type GetAppResponseJson struct {
+	Application Application `json:"application"`
 }
 
 // Application deserializeable from Eureka XML
 type Application struct {
-	Name      string      `xml:"name"`
-	Instances []*Instance `xml:"instance"`
+	Name      string      `xml:"name" json:"name"`
+	Instances []*Instance `xml:"instance" json:"instance"`
 }
 
 // StatusType is an enum of the different statuses allowed by Eureka
@@ -56,20 +67,40 @@ const (
 	MyOwn  = "MyOwn"
 )
 
+// RegisterInstanceJson lets us serialize the eureka/v2/apps/<ins> request JSON--a wrapped Instance
+type RegisterInstanceJson struct {
+	Instance *Instance `json:"instance"`
+}
+
 // Instance [de]serializeable [to|from] Eureka XML
 type Instance struct {
-	XMLName          struct{}         `xml:"instance"`
-	HostName         string           `xml:"hostName"`
-	App              string           `xml:"app"`
-	IPAddr           string           `xml:"ipAddr"`
-	VipAddress       string           `xml:"vipAddress"`
-	SecureVipAddress string           `xml:"secureVipAddress"`
-	Status           StatusType       `xml:"status"`
-	Port             int              `xml:"port"`
-	SecurePort       int              `xml:"securePort"`
-	DataCenterInfo   DataCenterInfo   `xml:"dataCenterInfo"`
-	LeaseInfo        LeaseInfo        `xml:"leaseInfo"`
-	Metadata         InstanceMetadata `xml:"metadata"`
+	XMLName          struct{} `xml:"instance" json:"-"`
+	HostName         string   `xml:"hostName" json:"hostName"`
+	App              string   `xml:"app" json:"app"`
+	IPAddr           string   `xml:"ipAddr" json:"ipAddr"`
+	VipAddress       string   `xml:"vipAddress" json:"vipAddress"`
+	SecureVipAddress string   `xml:"secureVipAddress" json:"secureVipAddress"`
+
+	Status           StatusType `xml:"status" json:"status"`
+	Overriddenstatus StatusType `xml:"overriddenstatus" json:"overriddenstatus"`
+
+	Port        int  `xml:"port" json:"-"`
+	PortJ       Port `json:"port" xml:"-"`
+	SecurePort  int  `xml:"securePort" json:"-"`
+	SecurePortJ Port `json:"securePort" xml:"-"`
+
+	CountryId      int64          `xml:"countryId" json:"countryId"`
+	DataCenterInfo DataCenterInfo `xml:"dataCenterInfo" json:"dataCenterInfo"`
+
+	LeaseInfo LeaseInfo        `xml:"leaseInfo" json:"leaseInfo"`
+	Metadata  InstanceMetadata `xml:"metadata" json:"metadata"`
+}
+
+// Port struct used for JSON [un]marshaling only
+// looks like: "port":{"@enabled":"true", "$":"7101"},
+type Port struct {
+	Number  string `json:"$"`
+	Enabled string `json:"@enabled"`
 }
 
 // InstanceMetadata represents the eureka metadata, which is arbitrary XML. See
@@ -83,31 +114,31 @@ type InstanceMetadata struct {
 // <xsd:complexType name="amazonMetdataType">
 // from http://docs.amazonwebservices.com/AWSEC2/latest/DeveloperGuide/index.html?AESDG-chapter-instancedata.html
 type AmazonMetadataType struct {
-	AmiLaunchIndex   string `xml:"ami-launch-index"`
-	LocalHostname    string `xml:"local-hostname"`
-	AvailabilityZone string `xml:"availability-zone"`
-	InstanceID       string `xml:"instance-id"`
-	PublicIpv4       string `xml:"public-ipv4"`
-	PublicHostname   string `xml:"public-hostname"`
-	AmiManifestPath  string `xml:"ami-manifest-path"`
-	LocalIpv4        string `xml:"local-ipv4"`
-	HostName         string `xml:"hostname"`
-	AmiID            string `xml:"ami-id"`
-	InstanceType     string `xml:"instance-type"`
+	AmiLaunchIndex   string `xml:"ami-launch-index" json:"ami-launch-index"`
+	LocalHostname    string `xml:"local-hostname" json:"local-hostname"`
+	AvailabilityZone string `xml:"availability-zone" json:"availability-zone"`
+	InstanceID       string `xml:"instance-id" json:"instance-id"`
+	PublicIpv4       string `xml:"public-ipv4" json:"public-ipv4"`
+	PublicHostname   string `xml:"public-hostname" json:"public-hostname"`
+	AmiManifestPath  string `xml:"ami-manifest-path" json:"ami-manifest-path"`
+	LocalIpv4        string `xml:"local-ipv4" json:"local-ipv4"`
+	HostName         string `xml:"hostname" json:"hostname"`
+	AmiID            string `xml:"ami-id" json:"ami-id"`
+	InstanceType     string `xml:"instance-type" json:"instance-type"`
 }
 
 // DataCenterInfo is only really useful when running in AWS.
 type DataCenterInfo struct {
-	Name     string             `xml:"name"`
-	Metadata AmazonMetadataType `xml:"metadata"`
+	Name     string             `xml:"name" json:"name"`
+	Metadata AmazonMetadataType `xml:"metadata" json:"metadata"`
 }
 
 // LeaseInfo tells us about the renewal from Eureka, including how old it is
 type LeaseInfo struct {
-	RenewalIntervalInSecs int32 `xml:"renewalIntervalInSecs"`
-	DurationInSecs        int32 `xml:"durationInSecs"`
-	RegistrationTimestamp int64 `xml:"registrationTimestamp"`
-	LastRenewalTimestamp  int64 `xml:"lastRenewalTimestamp"`
-	EvictionTimestamp     int32 `xml:"evictionTimestamp"`
-	ServiceUpTimestamp    int64 `xml:"serviceUpTimestamp"`
+	RenewalIntervalInSecs int32 `xml:"renewalIntervalInSecs" json:"renewalIntervalInSecs"`
+	DurationInSecs        int32 `xml:"durationInSecs" json:"durationInSecs"`
+	RegistrationTimestamp int64 `xml:"registrationTimestamp" json:"registrationTimestamp"`
+	LastRenewalTimestamp  int64 `xml:"lastRenewalTimestamp" json:"lastRenewalTimestamp"`
+	EvictionTimestamp     int64 `xml:"evictionTimestamp" json:"evictionTimestamp"`
+	ServiceUpTimestamp    int64 `xml:"serviceUpTimestamp" json:"serviceUpTimestamp"`
 }
