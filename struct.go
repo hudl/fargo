@@ -22,7 +22,7 @@ type EurekaConnection struct {
 	Retries        int
 	DNSDiscovery   bool
 	DiscoveryZone  string
-	discoveryTtl   <-chan time.Time
+	discoveryTtl   chan struct{}
 }
 
 // GetAppsResponse lets us deserialize the eureka/v2/apps response XML

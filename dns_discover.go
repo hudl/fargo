@@ -34,7 +34,7 @@ func discoverDNS(domain string, port int) (servers []string, ttl time.Duration, 
 		}
 		for _, instance := range instances {
 			// format the service URL
-			servers = append(servers, fmt.Sprintf("http://%s:%s/eureka/v2/", instance, port))
+			servers = append(servers, fmt.Sprintf("http://%s:%d/eureka/v2", instance, port))
 		}
 	}
 	return

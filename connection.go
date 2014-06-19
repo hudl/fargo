@@ -15,13 +15,20 @@ func init() {
 // balancing scheme.
 // TODO: Make this not just pick a random one.
 func (e *EurekaConnection) SelectServiceURL() string {
-	if e.DNSDiscovery && len(e.discoveryTtl) > 0 {
-		<-e.discoveryTtl
+	if e.discoveryTtl == nil {
+		e.discoveryTtl = make(chan struct{}, 1)
+	}
+	if e.DNSDiscovery && len(e.discoveryTtl) == 0 {
 		servers, ttl, err := discoverDNS(e.DiscoveryZone, e.ServicePort)
 		if err != nil {
 			return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
 		}
-		e.discoveryTtl = time.After(ttl)
+		e.discoveryTtl <- struct{}{}
+		time.AfterFunc(ttl, func() {
+			// At the end of the timeout, empty the channel so that the next
+			// SelectServiceURL call will refresh the DNS info
+			<-e.discoveryTtl
+		})
 		e.ServiceUrls = servers
 	}
 	return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
