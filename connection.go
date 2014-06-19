@@ -21,7 +21,7 @@ func (e *EurekaConnection) SelectServiceURL() string {
 	if e.DNSDiscovery && len(e.discoveryTtl) == 0 {
 		servers, ttl, err := discoverDNS(e.DiscoveryZone, e.ServicePort)
 		if err != nil {
-			return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
+			return choice(e.ServiceUrls)
 		}
 		e.discoveryTtl <- struct{}{}
 		time.AfterFunc(ttl, func() {
@@ -31,7 +31,11 @@ func (e *EurekaConnection) SelectServiceURL() string {
 		})
 		e.ServiceUrls = servers
 	}
-	return e.ServiceUrls[rand.Int()%len(e.ServiceUrls)]
+	return choice(e.ServiceUrls)
+}
+
+func choice(options []string) string {
+	return options[rand.Int()%len(options)]
 }
 
 // NewConnFromConfigFile sets up a connection object based on a config in
