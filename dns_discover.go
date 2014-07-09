@@ -46,7 +46,7 @@ func findTXT(fqdn string) ([]string, time.Duration, error) {
 	query.SetQuestion(fqdn, dns.TypeTXT)
 	dnsServerAddr, err := findDnsServerAddr()
 	if err != nil {
-		log.Error("Failure fiding DNS server, err=%s", err.Error())
+		log.Error("Failure finding DNS server, err=%s", err.Error())
 		return nil, defaultTTL, err
 	}
 
