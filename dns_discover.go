@@ -44,6 +44,12 @@ func findTXT(fqdn string) ([]string, time.Duration, error) {
 	defaultTTL := 120 * time.Second
 	query := new(dns.Msg)
 	query.SetQuestion(fqdn, dns.TypeTXT)
+	dnsServerAddr, err := findDnsServerAddr()
+	if err != nil {
+		log.Error("Failure finding DNS server, err=%s", err.Error())
+		return nil, defaultTTL, err
+	}
+
 	response, err := dns.Exchange(query, dnsServerAddr)
 	if err != nil {
 		log.Error("Failure resolving name %s err=%s", fqdn, err.Error())
@@ -68,12 +74,15 @@ func findTXT(fqdn string) ([]string, time.Duration, error) {
 	return txt.Txt, time.Duration(ttl) * time.Second, nil
 }
 
-var dnsServerAddr string
-
-func init() {
+func findDnsServerAddr() (string, error) {
 	// Find a DNS server using the OS resolv.conf
-	config, _ := dns.ClientConfigFromFile("/etc/resolv.conf")
-	dnsServerAddr = config.Servers[0] + ":" + config.Port
+	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
+	if err != nil {
+		log.Error("Failure finding DNS server address from /etc/resolv.conf, err = %s", err)
+		return "", err
+	} else {
+		return config.Servers[0] + ":" + config.Port, nil
+	}
 }
 
 func region() (string, error) {
