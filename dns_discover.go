@@ -78,10 +78,10 @@ func findDnsServerAddr() (string, error) {
 	// Find a DNS server using the OS resolv.conf
 	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
-		return config.Servers[0] + ":" + config.Port, nil
-	} else {
 		log.Error("Failure finding DNS server address from /etc/resolv.conf, err = %s", err)
 		return "", err
+	} else {
+		return config.Servers[0] + ":" + config.Port, nil
 	}
 }
 
