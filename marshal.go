@@ -107,3 +107,11 @@ func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	// TODO(cq) could actually parse Raw here, and in a parallel UnmarshalXML as well.
 	return nil
 }
+
+func (i *InstanceMetadata) MarshallJSON(v interface{}) ([]byte, error) {
+	if (i.parsed != nil) {
+		return json.Marshal(i.parsed)
+	}
+	return i.Raw, nil
+}
+

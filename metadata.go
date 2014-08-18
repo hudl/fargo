@@ -21,6 +21,14 @@ func (a *Application) ParseAllMetadata() error {
 	return nil
 }
 
+// SetMetadataString for a given instance before register
+func (ins *Instance) SetMetadataString(key, value string) {
+	if ins.Metadata.parsed == nil {
+		ins.Metadata.parsed = map[string]interface{}{}
+	}
+	ins.Metadata.parsed[key] = value
+}
+
 func (im *InstanceMetadata) parse() error {
 	if len(im.Raw) == 0 {
 		im.parsed = make(map[string]interface{})

@@ -227,10 +227,6 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	reqURL := e.generateURL(slug)
 
 	params := map[string]string{key: value}
-	if ins.Metadata.parsed == nil {
-		ins.Metadata.parsed = map[string]interface{}{}
-	}
-	ins.Metadata.parsed[key] = value
 
 	log.Debug("Updating instance metadata url=%s metadata=%s", reqURL, params)
 	body, rcode, err := putKV(reqURL, params)
@@ -243,6 +239,7 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 			ins.HostName, ins.App, string(body))
 		return fmt.Errorf("http returned %d possible failure updating instance metadata ", rcode)
 	}
+	ins.SetMetadataString(key, value)
 	return nil
 }
 
