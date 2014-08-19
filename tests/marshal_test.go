@@ -42,3 +42,22 @@ func TestJsonMarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestMetadataMarshal(t *testing.T) {
+	Convey("Given an InstanceMetadata", t, func() {
+		ins := &fargo.Instance{}
+		ins.SetMetadataString("key1", "value1")
+		ins.SetMetadataString("key2", "value2")
+
+		Convey("When the metadata are marshalled", func() {
+			b, err := json.Marshal(&ins.Metadata)
+			fmt.Printf("(debug info b = %s)", b)
+
+			Convey("The marshalled JSON should have these values", func() {
+				So(string(b), ShouldEqual, `{"key1":"value1","key2":"value2"}`)
+				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
