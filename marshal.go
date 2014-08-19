@@ -108,7 +108,8 @@ func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (i *InstanceMetadata) MarshallJSON(v interface{}) ([]byte, error) {
+// MarshalJSON is a custom JSON marshaler for InstanceMetadata.
+func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
 	if (i.parsed != nil) {
 		return json.Marshal(i.parsed)
 	}
