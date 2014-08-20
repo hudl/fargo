@@ -107,3 +107,12 @@ func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	// TODO(cq) could actually parse Raw here, and in a parallel UnmarshalXML as well.
 	return nil
 }
+
+// MarshalJSON is a custom JSON marshaler for InstanceMetadata.
+func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
+	if (i.parsed != nil) {
+		return json.Marshal(i.parsed)
+	}
+	return i.Raw, nil
+}
+
