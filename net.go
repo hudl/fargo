@@ -178,9 +178,12 @@ func (e *EurekaConnection) GetInstance(app, hostname string) (*Instance, error) 
 	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], app, hostname)
 	reqURL := e.generateURL(slug)
 	log.Debug("Getting instance with url %s", reqURL)
-	body, _, err := getBody(reqURL, e.UseJson)
+	body, rcode, err := getBody(reqURL, e.UseJson)
 	if err != nil {
 		return nil, err
+	}
+	if rcode != 200 {
+		return nil, fmt.Errorf("Error getting instance, rcode = %d", rcode)
 	}
 	var ins *Instance
 	if e.UseJson {
