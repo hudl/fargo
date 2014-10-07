@@ -44,7 +44,7 @@ func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 	cfg, err := ReadConfig(location)
 	if err != nil {
 		log.Error("Problem reading config %s error: %s", location, err.Error())
-		return c, nil
+		return c, err
 	}
 	return NewConnFromConfig(cfg), nil
 }
