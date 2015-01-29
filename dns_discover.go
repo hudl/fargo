@@ -4,6 +4,7 @@ package fargo
 
 import (
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/franela/goreq"
 	"github.com/miekg/dns"
 	"time"
@@ -22,13 +23,13 @@ func discoverDNS(domain string, port int) (servers []string, ttl time.Duration, 
 		err = fmt.Errorf("invalid domain name: '%s' is not a domain name", domain)
 		return
 	}
-	regionRecords, ttl, err := findTXT(domain)
+	regionRecords, ttl, err := retryingFindTXT(domain)
 	if err != nil {
 		return
 	}
 
 	for _, az := range regionRecords {
-		instances, _, er := findTXT("txt." + dns.Fqdn(az))
+		instances, _, er := retryingFindTXT("txt." + dns.Fqdn(az))
 		if er != nil {
 			continue
 		}
@@ -37,6 +38,20 @@ func discoverDNS(domain string, port int) (servers []string, ttl time.Duration, 
 			servers = append(servers, fmt.Sprintf("http://%s:%d/eureka/v2", instance, port))
 		}
 	}
+	return
+}
+
+// retryingFindTXT will, on any DNS failure, retry for up to 10 minutes before
+// giving up and returning an empty []string of records
+func retryingFindTXT(fqdn string) (records []string, ttl time.Duration, err error) {
+	err = backoff.Retry(
+		func() error {
+			records, ttl, err = findTXT(fqdn)
+			if err != nil {
+				log.Error("Retrying DNS query. Query failed with: %s", err.Error())
+			}
+			return err
+		}, backoff.NewExponentialBackOff())
 	return
 }
 

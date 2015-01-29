@@ -49,7 +49,7 @@ func TestGetNetflixTestDomain(t *testing.T) {
 		servers, ttl, err := discoverDNS("discoverytest.netflix.net", 7001)
 		So(ttl, ShouldEqual, 60*time.Second)
 		So(err, ShouldBeNil)
-		So(len(servers), ShouldEqual, 4)
+		So(len(servers), ShouldEqual, 6)
 		Convey("Servers discovered should all be EC2 DNS names", func() {
 			for _, s := range servers {
 				So(s[0:11], ShouldEqual, "http://ec2-")
