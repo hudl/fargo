@@ -41,7 +41,7 @@ func discoverDNS(domain string, port int) (servers []string, ttl time.Duration, 
 	return
 }
 
-// retryingFindTXT will, on any DNS failure, retry for up to 10 minutes before
+// retryingFindTXT will, on any DNS failure, retry for up to 15 minutes before
 // giving up and returning an empty []string of records
 func retryingFindTXT(fqdn string) (records []string, ttl time.Duration, err error) {
 	err = backoff.Retry(
