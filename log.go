@@ -11,6 +11,6 @@ var metadataLog = logging.MustGetLogger("fargo.metadata")
 var marshalLog = logging.MustGetLogger("fargo.marshal")
 
 func init() {
-    logging.SetLevel(logging.WARNING, "fargo.metadata")
-    logging.SetLevel(logging.WARNING, "fargo.marshal")
+	logging.SetLevel(logging.WARNING, "fargo.metadata")
+	logging.SetLevel(logging.WARNING, "fargo.marshal")
 }

@@ -60,4 +60,3 @@ func TestMetadataMarshal(t *testing.T) {
 		})
 	})
 }
-

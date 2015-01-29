@@ -13,7 +13,7 @@ func (a *Application) ParseAllMetadata() error {
 	for _, instance := range a.Instances {
 		err := instance.Metadata.parse()
 		if err != nil {
-			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s", 
+			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s",
 				instance.HostName, a.Name, err.Error())
 			return err
 		}

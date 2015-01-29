@@ -106,7 +106,7 @@ type Port struct {
 // InstanceMetadata represents the eureka metadata, which is arbitrary XML. See
 // metadata.go for more info.
 type InstanceMetadata struct {
-	Raw    []byte                 `xml:",innerxml" json:"-"`
+	Raw    []byte `xml:",innerxml" json:"-"`
 	parsed map[string]interface{}
 }
 
