@@ -125,17 +125,17 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 	slug := fmt.Sprintf("%s/%s", EurekaURLSlugs["Apps"], ins.App)
 	reqURL := e.generateURL(slug)
 	log.Debug("Registering instance with url %s", reqURL)
-	_, rcode, err := getBody(reqURL+"/"+ins.HostName, e.UseJson)
+	_, rcode, err := getBody(reqURL+"/"+ins.Id(), e.UseJson)
 	if err != nil {
 		log.Error("Failed check if Instance=%s exists in app=%s, error: %s",
-			ins.HostName, ins.App, err.Error())
+			ins.Id(), ins.App, err.Error())
 		return err
 	}
 	if rcode == 200 {
-		log.Notice("Instance=%s already exists in App=%s, aborting registration", ins.HostName, ins.App)
+		log.Notice("Instance=%s already exists in App=%s, aborting registration", ins.Id(), ins.App)
 		return nil
 	}
-	log.Notice("Instance=%s not yet registered with App=%s, registering.", ins.HostName, ins.App)
+	log.Notice("Instance=%s not yet registered with App=%s, registering.", ins.Id(), ins.App)
 	return e.ReregisterInstance(ins)
 }
 
@@ -163,7 +163,7 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	}
 	if rcode != 204 {
 		log.Warning("HTTP returned %d registering Instance=%s App=%s Body=\"%s\"", rcode,
-			ins.HostName, ins.App, string(body))
+			ins.Id(), ins.App, string(body))
 		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
 	}
 
@@ -173,9 +173,9 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	return nil
 }
 
-// GetInstance gets an Instance from eureka given its app and hostname.
-func (e *EurekaConnection) GetInstance(app, hostname string) (*Instance, error) {
-	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], app, hostname)
+// GetInstance gets an Instance from eureka given its app and instanceid.
+func (e *EurekaConnection) GetInstance(app, insId string) (*Instance, error) {
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], app, insId)
 	reqURL := e.generateURL(slug)
 	log.Debug("Getting instance with url %s", reqURL)
 	body, rcode, err := getBody(reqURL, e.UseJson)
@@ -197,7 +197,7 @@ func (e *EurekaConnection) GetInstance(app, hostname string) (*Instance, error) 
 }
 
 func (e *EurekaConnection) readInstanceInto(ins *Instance) error {
-	tins, err := e.GetInstance(ins.App, ins.HostName)
+	tins, err := e.GetInstance(ins.App, ins.Id())
 	if err == nil {
 		*ins = *tins
 	}
@@ -207,7 +207,7 @@ func (e *EurekaConnection) readInstanceInto(ins *Instance) error {
 // DeregisterInstance will deregister the given Instance from eureka. This is good practice
 // to do before exiting or otherwise going off line.
 func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
-	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.Id())
 	reqURL := e.generateURL(slug)
 	log.Debug("Deregistering instance with url %s", reqURL)
 
@@ -217,7 +217,7 @@ func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
 		return err
 	}
 	if rcode != 204 {
-		log.Warning("HTTP returned %d deregistering Instance=%s App=%s", rcode, ins.HostName, ins.App)
+		log.Warning("HTTP returned %d deregistering Instance=%s App=%s", rcode, ins.Id(), ins.App)
 		return fmt.Errorf("http returned %d possible failure deregistering instance\n", rcode)
 	}
 
@@ -226,7 +226,7 @@ func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
 
 // AddMetadataString to a given instance. Is immediately sent to Eureka server.
 func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) error {
-	slug := fmt.Sprintf("%s/%s/%s/metadata", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	slug := fmt.Sprintf("%s/%s/%s/metadata", EurekaURLSlugs["Apps"], ins.App, ins.Id())
 	reqURL := e.generateURL(slug)
 
 	params := map[string]string{key: value}
@@ -239,7 +239,7 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	}
 	if rcode < 200 || rcode >= 300 {
 		log.Warning("HTTP returned %d updating metadata Instance=%s App=%s Body=\"%s\"", rcode,
-			ins.HostName, ins.App, string(body))
+			ins.Id(), ins.App, string(body))
 		return fmt.Errorf("http returned %d possible failure updating instance metadata ", rcode)
 	}
 	ins.SetMetadataString(key, value)
@@ -248,7 +248,7 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 
 // UpdateInstanceStatus updates the status of a given instance with eureka.
 func (e EurekaConnection) UpdateInstanceStatus(ins *Instance, status StatusType) error {
-	slug := fmt.Sprintf("%s/%s/%s/status", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	slug := fmt.Sprintf("%s/%s/%s/status", EurekaURLSlugs["Apps"], ins.App, ins.Id())
 	reqURL := e.generateURL(slug)
 
 	params := map[string]string{"value": string(status)}
@@ -261,7 +261,7 @@ func (e EurekaConnection) UpdateInstanceStatus(ins *Instance, status StatusType)
 	}
 	if rcode < 200 || rcode >= 300 {
 		log.Warning("HTTP returned %d updating status Instance=%s App=%s Body=\"%s\"", rcode,
-			ins.HostName, ins.App, string(body))
+			ins.Id(), ins.App, string(body))
 		return fmt.Errorf("http returned %d possible failure updating instance status ", rcode)
 	}
 	return nil
@@ -270,7 +270,7 @@ func (e EurekaConnection) UpdateInstanceStatus(ins *Instance, status StatusType)
 // HeartBeatInstance sends a single eureka heartbeat. Does not continue sending
 // heartbeats. Errors if the response is not 200.
 func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
-	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.HostName)
+	slug := fmt.Sprintf("%s/%s/%s", EurekaURLSlugs["Apps"], ins.App, ins.Id())
 	reqURL := e.generateURL(slug)
 	log.Debug("Sending heartbeat with url %s", reqURL)
 	req, err := http.NewRequest("PUT", reqURL, nil)
@@ -280,12 +280,20 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 	}
 	_, rcode, err := netReq(req)
 	if err != nil {
-		log.Error("Error sending heartbeat for Instance=%s App=%s, error: %s", ins.HostName, ins.App, err.Error())
+		log.Error("Error sending heartbeat for Instance=%s App=%s, error: %s", ins.Id(), ins.App, err.Error())
 		return err
 	}
 	if rcode != 200 {
-		log.Error("Sending heartbeat for Instance=%s App=%s returned code %d", ins.HostName, ins.App, rcode)
+		log.Error("Sending heartbeat for Instance=%s App=%s returned code %d", ins.Id(), ins.App, rcode)
 		return fmt.Errorf("heartbeat returned code %d\n", rcode)
 	}
 	return nil
+}
+
+func (i *Instance) Id() string {
+	if i.DataCenterInfo.Name == "Amazon" {
+		return i.DataCenterInfo.Metadata.InstanceID
+	}
+	return i.HostName
+
 }
