@@ -35,6 +35,9 @@ func (e *EurekaConnection) SelectServiceURL() string {
 }
 
 func choice(options []string) string {
+	if len(options) == 0 {
+		return ""
+	}
 	return options[rand.Int()%len(options)]
 }
 
