@@ -35,6 +35,9 @@ func (e *EurekaConnection) SelectServiceURL() string {
 }
 
 func choice(options []string) string {
+	if len(options) == 0 {
+		log.Fatal("There are no ServiceUrls to choose from, bailing out")
+	}
 	return options[rand.Int()%len(options)]
 }
 
