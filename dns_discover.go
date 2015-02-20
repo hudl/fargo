@@ -126,5 +126,5 @@ func availabilityZone() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return zone[:len(zone)-1], nil
+	return zone, nil
 }
