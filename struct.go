@@ -89,6 +89,10 @@ type Instance struct {
 	SecurePort  int  `xml:"securePort" json:"-"`
 	SecurePortJ Port `json:"securePort" xml:"-"`
 
+	HomePageUrl    string `xml:"homePageUrl" json:"homePageUrl"`
+	StatusPageUrl  string `xml:"statusPageUrl" json:"statusPageUrl"`
+	HealthCheckUrl string `xml:"healthCheckUrl" json:"healthCheckUrl"`
+
 	CountryId      int64          `xml:"countryId" json:"countryId"`
 	DataCenterInfo DataCenterInfo `xml:"dataCenterInfo" json:"dataCenterInfo"`
 
