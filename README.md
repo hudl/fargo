@@ -1,4 +1,5 @@
 # fargo
+[![](https://img.shields.io/badge/hudl-OSS-orange.svg)](http://hudl.github.io/)
 
 Netflix Eureka client in golang. Named for the show Eureka.
 
