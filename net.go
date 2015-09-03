@@ -291,9 +291,13 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 }
 
 func (i *Instance) Id() string {
+	if i.UniqueID != nil {
+		return i.UniqueID(*i)
+	}
+
 	if i.DataCenterInfo.Name == "Amazon" {
 		return i.DataCenterInfo.Metadata.InstanceID
 	}
-	return i.HostName
 
+	return i.HostName
 }

@@ -98,6 +98,8 @@ type Instance struct {
 
 	LeaseInfo LeaseInfo        `xml:"leaseInfo" json:"leaseInfo"`
 	Metadata  InstanceMetadata `xml:"metadata" json:"metadata"`
+
+	UniqueID func(i Instance) string `xml:"-" json:"-"`
 }
 
 // Port struct used for JSON [un]marshaling only
