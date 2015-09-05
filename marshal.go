@@ -113,5 +113,10 @@ func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
 	if i.parsed != nil {
 		return json.Marshal(i.parsed)
 	}
+
+	if i.Raw == nil {
+		i.Raw = []byte("{}")
+	}
+
 	return i.Raw, nil
 }
