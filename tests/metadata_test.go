@@ -35,7 +35,7 @@ func TestGetFloat(t *testing.T) {
 		Convey("With metadata", func() {
 			metadata := new(fargo.InstanceMetadata)
 			instance.Metadata = *metadata
-			Convey("That has a float value", func() {
+			Convey("That has a float64 value", func() {
 				key := "d"
 				value := 1.9
 				metadata.Raw = []byte("<" + key + ">" + strconv.FormatFloat(value, 'f', -1, 64) + "</" + key + ">")
@@ -45,7 +45,7 @@ func TestGetFloat(t *testing.T) {
 					So(actualValue, ShouldEqual, value)
 				})
 			})
-			Convey("That has a float value", func() {
+			Convey("That has a float32 value", func() {
 				key := "d"
 				value := 1.9
 				metadata.Raw = []byte("<" + key + ">" + strconv.FormatFloat(value, 'f', -1, 32) + "</" + key + ">")
