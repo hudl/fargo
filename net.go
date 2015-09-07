@@ -199,6 +199,7 @@ func (e *EurekaConnection) GetInstance(app, insId string) (*Instance, error) {
 func (e *EurekaConnection) readInstanceInto(ins *Instance) error {
 	tins, err := e.GetInstance(ins.App, ins.Id())
 	if err == nil {
+		tins.UniqueID = ins.UniqueID
 		*ins = *tins
 	}
 	return err
