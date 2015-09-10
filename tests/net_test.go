@@ -86,33 +86,39 @@ func TestRegistration(t *testing.T) {
 
 func TestReregistration(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
-	i := fargo.Instance{
-		HostName:         "i-123456",
-		Port:             9090,
-		App:              "TESTAPP",
-		IPAddr:           "127.0.0.10",
-		VipAddress:       "127.0.0.10",
-		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
-		SecureVipAddress: "127.0.0.10",
-		Status:           fargo.UP,
-	}
+
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
+
+		i := fargo.Instance{
+			HostName:         "i-123456",
+			Port:             9090,
+			App:              "TESTAPP",
+			IPAddr:           "127.0.0.10",
+			VipAddress:       "127.0.0.10",
+			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+			SecureVipAddress: "127.0.0.10",
+			Status:           fargo.UP,
+		}
+
 		Convey("Register a TESTAPP instance", t, func() {
 			Convey("Instance registers correctly", func() {
 				err := e.RegisterInstance(&i)
 				So(err, ShouldBeNil)
 			})
 		})
+
 		Convey("Reregister the TESTAPP instance", t, func() {
 			Convey("Instance reregisters correctly", func() {
 				err := e.ReregisterInstance(&i)
 				So(err, ShouldBeNil)
 			})
+
 			Convey("Instance can check in", func() {
 				err := e.HeartBeatInstance(&i)
 				So(err, ShouldBeNil)
 			})
+
 			Convey("Instance can be gotten correctly", func() {
 				ii, err := e.GetInstance(i.App, i.HostName)
 				So(err, ShouldBeNil)

@@ -19,7 +19,9 @@ echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdom
 172.16.0.22 node2 node2.localdomain
 " > /etc/hosts
 
-wget -O /var/lib/tomcat/webapps/eureka.zip https://netflixoss.ci.cloudbees.com/job/eureka-master/lastSuccessfulBuild/artifact/eureka-server/build/libs/eureka-server-1.1.135-SNAPSHOT.war
+ARTIFACT="https://netflixoss.ci.cloudbees.com/job/eureka-master/lastSuccessfulBuild/artifact/eureka-server/build/libs/eureka-server-1.1.147-SNAPSHOT.war"
+
+wget -O /var/lib/tomcat/webapps/eureka.zip ${ARTIFACT}
 unzip -o -d /var/lib/tomcat/webapps/eureka /var/lib/tomcat/webapps/eureka.zip
 cp /vagrant/tests/eureka_properties/*.properties /var/lib/tomcat/webapps/eureka/WEB-INF/classes/
 chown -R tomcat:tomcat /var/lib/tomcat/webapps/eureka

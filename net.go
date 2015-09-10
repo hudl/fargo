@@ -199,6 +199,7 @@ func (e *EurekaConnection) GetInstance(app, insId string) (*Instance, error) {
 func (e *EurekaConnection) readInstanceInto(ins *Instance) error {
 	tins, err := e.GetInstance(ins.App, ins.Id())
 	if err == nil {
+		tins.UniqueID = ins.UniqueID
 		*ins = *tins
 	}
 	return err
@@ -291,9 +292,13 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 }
 
 func (i *Instance) Id() string {
+	if i.UniqueID != nil {
+		return i.UniqueID(*i)
+	}
+
 	if i.DataCenterInfo.Name == "Amazon" {
 		return i.DataCenterInfo.Metadata.InstanceID
 	}
-	return i.HostName
 
+	return i.HostName
 }
