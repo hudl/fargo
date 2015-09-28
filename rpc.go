@@ -4,7 +4,6 @@ package fargo
 
 import (
 	"bytes"
-	"github.com/mreiferson/go-httpclient"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -88,16 +87,19 @@ func netReqTyped(req *http.Request, isJson bool) ([]byte, int, error) {
 }
 
 func netReq(req *http.Request) ([]byte, int, error) {
-	transport := &httpclient.Transport{
-		ConnectTimeout:        5 * time.Second,
-		RequestTimeout:        30 * time.Second,
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).Dial,
 		ResponseHeaderTimeout: 10 * time.Second,
 		MaxIdleConnsPerHost:   -1,
 	}
-	defer transport.Close()
 
 	// Send the request via a client
-	client := &http.Client{Transport: transport}
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   30 * time.Second,
+	}
 	var resp *http.Response
 	var err error
 	for i := 0; i < 3; i++ {
