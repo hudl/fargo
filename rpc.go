@@ -92,7 +92,7 @@ func netReq(req *http.Request) ([]byte, int, error) {
 		ConnectTimeout:        5 * time.Second,
 		RequestTimeout:        30 * time.Second,
 		ResponseHeaderTimeout: 10 * time.Second,
-		DisableKeepAlives:     true,
+		MaxIdleConnsPerHost:   -1,
 	}
 	defer transport.Close()
 
