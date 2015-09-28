@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+var transport = &http.Transport{
+	Dial: (&net.Dialer{
+		Timeout: 5 * time.Second,
+	}).Dial,
+	ResponseHeaderTimeout: 10 * time.Second,
+}
+
 func postBody(reqURL string, reqBody []byte, isJson bool) ([]byte, int, error) {
 	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(reqBody))
 	if err != nil {
@@ -87,14 +94,6 @@ func netReqTyped(req *http.Request, isJson bool) ([]byte, int, error) {
 }
 
 func netReq(req *http.Request) ([]byte, int, error) {
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: 5 * time.Second,
-		}).Dial,
-		ResponseHeaderTimeout: 10 * time.Second,
-		MaxIdleConnsPerHost:   -1,
-	}
-
 	// Send the request via a client
 	client := &http.Client{
 		Transport: transport,
