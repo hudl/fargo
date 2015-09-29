@@ -3,7 +3,7 @@ package fargo
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
-	"code.google.com/p/gcfg"
+	"gopkg.in/gcfg.v1"
 )
 
 // Config is a base struct to be read by code.google.com/p/gcfg
