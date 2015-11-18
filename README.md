@@ -34,8 +34,7 @@ consideration for Go idioms, which means some Java-isms will never be included.
 
 Q: Does it cache?
 
-A: Yes. There is a shared cache that is checked before calling out to Eureka
-servers.
+A: No, it does not support caching records.
 
 Q: Can I integrate this into my Go app and have it manage hearbeats to Eureka?
 
