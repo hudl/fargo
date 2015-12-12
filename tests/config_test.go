@@ -30,8 +30,8 @@ func TestConfigs(t *testing.T) {
 		So(conf.Eureka.InTheCloud, ShouldEqual, false)
 		So(conf.Eureka.ConnectTimeoutSeconds, ShouldEqual, 2)
 		Convey("Both test servers should be in the service URL list", func() {
-			So(conf.Eureka.ServiceUrls, ShouldContain, "http://172.16.0.11:8080/eureka/v2")
-			So(conf.Eureka.ServiceUrls, ShouldContain, "http://172.16.0.22:8080/eureka/v2")
+			So(conf.Eureka.ServiceUrls, ShouldContain, "http://172.17.0.2:8080/eureka/v2")
+			So(conf.Eureka.ServiceUrls, ShouldContain, "http://172.17.0.3:8080/eureka/v2")
 		})
 		So(conf.Eureka.UseDNSForServiceUrls, ShouldEqual, false)
 	})

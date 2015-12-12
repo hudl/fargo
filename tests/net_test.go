@@ -30,14 +30,8 @@ func TestGetApps(t *testing.T) {
 		Convey("Pull single application", t, func() {
 			a, _ := e.GetApp("EUREKA")
 			So(len(a.Instances), ShouldEqual, 2)
-			for idx, ins := range a.Instances {
-				if ins.HostName == "node1.localdomain" {
-					So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.11")
-					So(a.Instances[idx].HostName, ShouldEqual, "node1.localdomain")
-				} else {
-					So(a.Instances[idx].IPAddr, ShouldEqual, "172.16.0.22")
-					So(a.Instances[idx].HostName, ShouldEqual, "node2.localdomain")
-				}
+			for _, ins := range a.Instances {
+				So(ins.IPAddr, ShouldBeIn, []string{"172.17.0.2", "172.17.0.3"})
 			}
 		})
 	}

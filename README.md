@@ -101,11 +101,28 @@ included [vagrant](http://vagrantup.com) specs.
 We're on semver and tag releases accordingly. The releases are signed and can
 be verified with `git tag --verify vA.B.C`.
 
-## Using Vagrant
+## Using Docker
 
-The Vagrantfile in this repo will set up a two-server eureka cluster using the
-OpsCode bento boxes. By default, the VMs are named node1.localdomain and
-node2.localdomain. They'll be provisioned and eureka will start automatically.
+Fargo is tested against two eureka versions, v1.1.147 and v1.3.1. To support
+testing, we provide Docker containers that supply Eureka locally. Here's how to
+get started.
+
+1. Clone Fargo
+1. If you don't have it, [install Docker](https://docs.docker.com/).
+1. Change into the `docker` directory of this repository.
+
+```
+# Build the image, change "1.3.1" to 1.1.147 for the older version
+VERSION=1.3.1
+docker build -f Dockerfile-v$VERSION -t hudloss/eureka:$VERSION .
+# Run two copies of the image (the containers will communicate with each other)
+docker run -d --name eureka1 hudloss/eureka:$VERSION
+docker run -d --name eureka2 hudloss/eureka:$VERSION
+```
+
+Now you're all set, and you should have Eureka servers available at
+172.17.0.2:8080 and 172.17.0.3:8080. Run Fargo's tests with `go test ./...`
+from the root of the repository. Happy Hacking!
 
 # Contributors
 
