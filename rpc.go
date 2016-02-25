@@ -21,13 +21,13 @@ var transport = &http.Transport{
 func postBody(reqURL string, reqBody []byte, isJson bool) ([]byte, int, error) {
 	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(reqBody))
 	if err != nil {
-		log.Error("Could not create POST %s with body %s, error: %s", reqURL, string(reqBody), err.Error())
+		log.Errorf("Could not create POST %s with body %s, error: %s", reqURL, string(reqBody), err.Error())
 		return nil, -1, err
 	}
-	log.Debug("postBody: %s %s : %s\n", req.Method, req.URL, string(reqBody))
+	log.Debugf("postBody: %s %s : %s\n", req.Method, req.URL, string(reqBody))
 	body, rcode, err := netReqTyped(req, isJson)
 	if err != nil {
-		log.Error("Could not complete POST %s with body %s, error: %s", reqURL, string(reqBody), err.Error())
+		log.Errorf("Could not complete POST %s with body %s, error: %s", reqURL, string(reqBody), err.Error())
 		return nil, rcode, err
 	}
 	//eurekaCache.Flush()
@@ -40,15 +40,15 @@ func putKV(reqURL string, pairs map[string]string) ([]byte, int, error) {
 		params.Add(k, v)
 	}
 	parameterizedURL := reqURL + "?" + params.Encode()
-	log.Notice("Sending KV request with URL %s", parameterizedURL)
+	log.Noticef("Sending KV request with URL %s", parameterizedURL)
 	req, err := http.NewRequest("PUT", parameterizedURL, nil)
 	if err != nil {
-		log.Error("Could not create PUT %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not create PUT %s, error: %s", reqURL, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := netReq(req) // TODO(cq) I think this can just be netReq() since there is no body
 	if err != nil {
-		log.Error("Could not complete PUT %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not complete PUT %s, error: %s", reqURL, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
@@ -57,12 +57,12 @@ func putKV(reqURL string, pairs map[string]string) ([]byte, int, error) {
 func getBody(reqURL string, isJson bool) ([]byte, int, error) {
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		log.Error("Could not create GET %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not create GET %s, error: %s", reqURL, err.Error())
 		return nil, -1, err
 	}
 	body, rcode, err := netReqTyped(req, isJson)
 	if err != nil {
-		log.Error("Could not complete GET %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not complete GET %s, error: %s", reqURL, err.Error())
 		return nil, rcode, err
 	}
 	return body, rcode, nil
@@ -71,12 +71,12 @@ func getBody(reqURL string, isJson bool) ([]byte, int, error) {
 func deleteReq(reqURL string) (int, error) {
 	req, err := http.NewRequest("DELETE", reqURL, nil)
 	if err != nil {
-		log.Error("Could not create DELETE %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not create DELETE %s, error: %s", reqURL, err.Error())
 		return -1, err
 	}
 	_, rcode, err := netReq(req)
 	if err != nil {
-		log.Error("Could not complete DELETE %s, error: %s", reqURL, err.Error())
+		log.Errorf("Could not complete DELETE %s, error: %s", reqURL, err.Error())
 		return rcode, err
 	}
 	return rcode, nil
@@ -106,7 +106,7 @@ func netReq(req *http.Request) ([]byte, int, error) {
 		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
 			// it's a transient network error so we sleep for a bit and try
 			// again in case it's a short-lived issue
-			log.Warning("Retrying after temporary network failure, error: %s",
+			log.Warningf("Retrying after temporary network failure, error: %s",
 				nerr.Error())
 			time.Sleep(10)
 		} else {
@@ -119,10 +119,10 @@ func netReq(req *http.Request) ([]byte, int, error) {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("Failure reading request body, error: %s", err.Error())
+		log.Errorf("Failure reading request body, error: %s", err.Error())
 		return nil, -1, err
 	}
 	// At this point we're done and shit worked, simply return the bytes
-	log.Info("Got eureka response from url=%v", req.URL)
+	log.Infof("Got eureka response from url=%v", req.URL)
 	return body, resp.StatusCode, nil
 }

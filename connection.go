@@ -46,7 +46,7 @@ func choice(options []string) string {
 func NewConnFromConfigFile(location string) (c EurekaConnection, err error) {
 	cfg, err := ReadConfig(location)
 	if err != nil {
-		log.Error("Problem reading config %s error: %s", location, err.Error())
+		log.Errorf("Problem reading config %s error: %s", location, err.Error())
 		return c, err
 	}
 	return NewConnFromConfig(cfg), nil
@@ -84,10 +84,10 @@ func NewConn(address ...string) (e EurekaConnection) {
 func (e *EurekaConnection) UpdateApp(app *Application) {
 	go func() {
 		for {
-			log.Notice("Updating app %s", app.Name)
+			log.Noticef("Updating app %s", app.Name)
 			err := e.readAppInto(app)
 			if err != nil {
-				log.Error("Failure updating %s in goroutine", app.Name)
+				log.Errorf("Failure updating %s in goroutine", app.Name)
 			}
 			<-time.After(time.Duration(e.PollInterval) * time.Second)
 		}

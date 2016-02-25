@@ -13,7 +13,7 @@ func (a *Application) ParseAllMetadata() error {
 	for _, instance := range a.Instances {
 		err := instance.Metadata.parse()
 		if err != nil {
-			log.Error("Failed parsing metadata for Instance=%s of Application=%s: %s",
+			log.Errorf("Failed parsing metadata for Instance=%s of Application=%s: %s",
 				instance.HostName, a.Name, err.Error())
 			return err
 		}
@@ -35,13 +35,13 @@ func (im *InstanceMetadata) parse() error {
 		log.Debug("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
-	metadataLog.Debug("InstanceMetadata.parse: %s", im.Raw)
+	metadataLog.Debugf("InstanceMetadata.parse: %s", im.Raw)
 
 	if len(im.Raw) > 0 && im.Raw[0] == '{' {
 		// JSON
 		err := json.Unmarshal(im.Raw, &im.parsed)
 		if err != nil {
-			log.Error("Error unmarshalling: %s", err.Error())
+			log.Errorf("Error unmarshalling: %s", err.Error())
 			return fmt.Errorf("error unmarshalling: %s", err.Error())
 		}
 	} else {
@@ -49,7 +49,7 @@ func (im *InstanceMetadata) parse() error {
 		fullDoc := append(append([]byte("<d>"), im.Raw...), []byte("</d>")...)
 		parsedDoc, err := x2j.ByteDocToMap(fullDoc, true)
 		if err != nil {
-			log.Error("Error unmarshalling: %s", err.Error())
+			log.Errorf("Error unmarshalling: %s", err.Error())
 			return fmt.Errorf("error unmarshalling: %s", err.Error())
 		}
 		im.parsed = parsedDoc["d"].(map[string]interface{})

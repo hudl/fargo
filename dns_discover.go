@@ -48,7 +48,7 @@ func retryingFindTXT(fqdn string) (records []string, ttl time.Duration, err erro
 		func() error {
 			records, ttl, err = findTXT(fqdn)
 			if err != nil {
-				log.Error("Retrying DNS query. Query failed with: %s", err.Error())
+				log.Errorf("Retrying DNS query. Query failed with: %s", err.Error())
 			}
 			return err
 		}, backoff.NewExponentialBackOff())
@@ -61,23 +61,23 @@ func findTXT(fqdn string) ([]string, time.Duration, error) {
 	query.SetQuestion(fqdn, dns.TypeTXT)
 	dnsServerAddr, err := findDnsServerAddr()
 	if err != nil {
-		log.Error("Failure finding DNS server, err=%s", err.Error())
+		log.Errorf("Failure finding DNS server, err=%s", err.Error())
 		return nil, defaultTTL, err
 	}
 
 	response, err := dns.Exchange(query, dnsServerAddr)
 	if err != nil {
-		log.Error("Failure resolving name %s err=%s", fqdn, err.Error())
+		log.Errorf("Failure resolving name %s err=%s", fqdn, err.Error())
 		return nil, defaultTTL, err
 	}
 	if len(response.Answer) < 1 {
 		err := fmt.Errorf("no Eureka discovery TXT record returned for name=%s", fqdn)
-		log.Error("no answer for name=%s err=%s", fqdn, err.Error())
+		log.Errorf("no answer for name=%s err=%s", fqdn, err.Error())
 		return nil, defaultTTL, err
 	}
 	if response.Answer[0].Header().Rrtype != dns.TypeTXT {
 		err := fmt.Errorf("did not receive TXT record back from query specifying TXT record. This should never happen.")
-		log.Error("Failure resolving name %s err=%s", fqdn, err.Error())
+		log.Errorf("Failure resolving name %s err=%s", fqdn, err.Error())
 		return nil, defaultTTL, err
 	}
 	txt := response.Answer[0].(*dns.TXT)
@@ -93,7 +93,7 @@ func findDnsServerAddr() (string, error) {
 	// Find a DNS server using the OS resolv.conf
 	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
-		log.Error("Failure finding DNS server address from /etc/resolv.conf, err = %s", err)
+		log.Errorf("Failure finding DNS server address from /etc/resolv.conf, err = %s", err)
 		return "", err
 	} else {
 		return config.Servers[0] + ":" + config.Port, nil
@@ -103,7 +103,7 @@ func findDnsServerAddr() (string, error) {
 func region() (string, error) {
 	zone, err := availabilityZone()
 	if err != nil {
-		log.Error("Could not retrieve availability zone err=%s", err.Error())
+		log.Errorf("Could not retrieve availability zone err=%s", err.Error())
 		return "us-east-1", err
 	}
 	return zone[:len(zone)-1], nil
