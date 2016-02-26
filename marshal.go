@@ -19,7 +19,7 @@ type getAppsResponseSingle struct {
 // UnmarshalJSON is a custom JSON unmarshaler for GetAppsResponse to deal with
 // sometimes non-wrapped Application arrays when there is only a single Application item.
 func (r *GetAppsResponse) UnmarshalJSON(b []byte) error {
-	marshalLog.Debug("GetAppsResponse.UnmarshalJSON b:%s\n", string(b))
+	marshalLog.Debugf("GetAppsResponse.UnmarshalJSON b:%s\n", string(b))
 	var err error
 
 	// Normal array case
@@ -52,7 +52,7 @@ type applicationSingle struct {
 // UnmarshalJSON is a custom JSON unmarshaler for Application to deal with
 // sometimes non-wrapped Instance array when there is only a single Instance item.
 func (a *Application) UnmarshalJSON(b []byte) error {
-	marshalLog.Debug("Application.UnmarshalJSON b:%s\n", string(b))
+	marshalLog.Debugf("Application.UnmarshalJSON b:%s\n", string(b))
 	var err error
 
 	// Normal array case
@@ -96,7 +96,7 @@ func (i *Instance) UnmarshalJSON(b []byte) error {
 func parsePort(s string) int {
 	n, err := strconv.Atoi(s)
 	if err != nil {
-		log.Warning("Invalid port error: %s", err.Error())
+		log.Warningf("Invalid port error: %s", err.Error())
 	}
 	return n
 }
