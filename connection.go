@@ -4,6 +4,7 @@ package fargo
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -80,7 +81,7 @@ func NewConn(address ...string) (e EurekaConnection) {
 }
 
 // UpdateApp creates a goroutine that continues to keep an application updated
-// with its status in Eureka
+// with its status in Eureka.
 func (e *EurekaConnection) UpdateApp(app *Application) {
 	go func() {
 		for {
@@ -92,4 +93,135 @@ func (e *EurekaConnection) UpdateApp(app *Application) {
 			<-time.After(time.Duration(e.PollInterval) * time.Second)
 		}
 	}()
+}
+
+// AppUpdate is the outcome of an attempt to get a fresh snapshot of a Eureka
+// application's state, together with an error that may have occurred in that
+// attempt. If the Err field is nil, the App field will be non-nil.
+type AppUpdate struct {
+	App *Application
+	Err error
+}
+
+func sendAppUpdatesEvery(d time.Duration, produce func() AppUpdate, c chan<- AppUpdate, done <-chan struct{}) {
+	t := time.NewTicker(d)
+	defer t.Stop()
+	for {
+		select {
+		case <-done:
+			close(c)
+			return
+		case <-t.C:
+			// Drop attempted sends when the consumer hasn't received the last buffered update.
+			select {
+			case c <- produce():
+			default:
+			}
+		}
+	}
+}
+
+// ScheduleAppUpdates starts polling for updates to the Eureka application with
+// the given name, using the connection's configured polling interval as its
+// period. It sends the outcome of each update attempt to the returned channel,
+// and continues until the supplied done channel is either closed or has a value
+// available. Once done sending updates to the returned channel, it closes it.
+//
+// If await is true, it sends at least one application update outcome to the
+// returned channel before returning.
+func (e *EurekaConnection) ScheduleAppUpdates(name string, await bool, done <-chan struct{}) <-chan AppUpdate {
+	produce := func() AppUpdate {
+		app, err := e.GetApp(name)
+		return AppUpdate{app, err}
+	}
+	c := make(chan AppUpdate, 1)
+	if await {
+		c <- produce()
+	}
+	go sendAppUpdatesEvery(time.Duration(e.PollInterval)*time.Second, produce, c, done)
+	return c
+}
+
+// An AppSource holds a periodically updated copy of a Eureka application.
+type AppSource struct {
+	m    *sync.RWMutex
+	app  *Application
+	done chan<- struct{}
+}
+
+// NewAppSource returns a new AppSource that offers a periodically updated copy
+// of the Eureka application with the given name, using the connection's
+// configured polling interval as its period.
+//
+// If await is true, it waits for the first application update to complete
+// before returning, though it's possible that that first update attempt could
+// fail, so that a subsequent call to CopyLatestAppTo would return false.
+func (e *EurekaConnection) NewAppSource(name string, await bool) *AppSource {
+	done := make(chan struct{})
+	updates := e.ScheduleAppUpdates(name, await, done)
+	s := &AppSource{
+		done: done,
+	}
+	if await {
+		if u := <-updates; u.Err != nil {
+			s.app = u.App
+		}
+	}
+	go func() {
+		for u := range updates {
+			if u.Err != nil {
+				s.m.Lock()
+				s.app = u.App
+				s.m.Unlock()
+			}
+		}
+	}()
+	return s
+}
+
+// Latest returns the most recently acquired Eureke application, if any. If the
+// most recent update attempt failed, or if no update attempt has yet to
+// complete, it returns nil.
+func (s *AppSource) Latest() *Application {
+	if s == nil {
+		return nil
+	}
+	s.m.RLock()
+	defer s.m.RUnlock()
+	return s.app
+}
+
+// CopyLatestTo copies the most recently acquired Eureka application to dst, if
+// any, and returns true if such an application was available. If no preceding
+// update attempt had succeeded, such that no application is available to be
+// copied, it returns false.
+func (s *AppSource) CopyLatestTo(dst *Application) bool {
+	if s == nil {
+		return false
+	}
+	s.m.RLock()
+	defer s.m.RUnlock()
+	if s.app == nil {
+		return false
+	}
+	*dst = *s.app
+	return true
+}
+
+// Stop turns off an AppSource, so that it will no longer attempt to update its
+// latest application.
+//
+// It is safe to call Latest or CopyLatestTo on a stopped source.
+func (s *AppSource) Stop() {
+	if s == nil {
+		return
+	}
+	// Allow multiple calls to Stop by precluding repeated attempts to close an
+	// already closed channel.
+	s.m.Lock()
+	defer s.m.Unlock()
+	if s.done != nil {
+		close(s.done)
+		s.done = nil
+	}
 }
