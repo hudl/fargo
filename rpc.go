@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+var HttpClient = &http.Client{
+	Transport: transport,
+	Timeout:   30 * time.Second,
+}
+
 var transport = &http.Transport{
 	Dial: (&net.Dialer{
 		Timeout: 5 * time.Second,
@@ -94,15 +99,10 @@ func netReqTyped(req *http.Request, isJson bool) ([]byte, int, error) {
 }
 
 func netReq(req *http.Request) ([]byte, int, error) {
-	// Send the request via a client
-	client := &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second,
-	}
 	var resp *http.Response
 	var err error
 	for i := 0; i < 3; i++ {
-		resp, err = client.Do(req)
+		resp, err = HttpClient.Do(req)
 		if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
 			// it's a transient network error so we sleep for a bit and try
 			// again in case it's a short-lived issue
