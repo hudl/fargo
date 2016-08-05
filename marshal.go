@@ -106,7 +106,13 @@ func parsePort(s string) int {
 func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	i.Raw = b
 	// TODO(cq) could actually parse Raw here, and in a parallel UnmarshalXML as well.
-	return nil
+	var err error
+	var m map[string]interface{}
+	if err = json.Unmarshal(b, &m); err == nil {
+		i.parsed = m
+		return nil
+	}
+	return err
 }
 
 // MarshalJSON is a custom JSON marshaler for InstanceMetadata.
