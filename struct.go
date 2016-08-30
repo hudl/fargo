@@ -134,10 +134,17 @@ type AmazonMetadataType struct {
 	InstanceType     string `xml:"instance-type" json:"instance-type"`
 }
 
-// DataCenterInfo is only really useful when running in AWS.
+// DataCenterInfo indicates which type of data center hosts this instance
+// and conveys details about the instance's environment.
 type DataCenterInfo struct {
-	Name     string             `xml:"name" json:"name"`
-	Metadata AmazonMetadataType `xml:"metadata" json:"metadata"`
+	// Name indicates which type of data center hosts this instance.
+	Name string
+	// Metadata provides details specific to an Amazon data center,
+	// populated and honored when the Name field's value is "Amazon".
+	Metadata AmazonMetadataType
+	// AlternateMetadata provides details specific to a data center other than Amazon,
+	// populated and honored when the Name field's value is not "Amazon".
+	AlternateMetadata map[string]string
 }
 
 // LeaseInfo tells us about the renewal from Eureka, including how old it is.

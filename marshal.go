@@ -5,6 +5,7 @@ package fargo
 import (
 	"encoding/json"
 	"encoding/xml"
+	"io"
 	"strconv"
 )
 
@@ -122,17 +123,22 @@ func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
 	return i.Raw, nil
 }
 
+// startLocalName creates a start-tag of an XML element with the given local name and no namespace name.
+func startLocalName(local string) xml.StartElement {
+	return xml.StartElement{Name: xml.Name{Space: "", Local: local}}
+}
+
 // MarshalXML is a custom XML marshaler for InstanceMetadata.
 func (i InstanceMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	tokens := []xml.Token{start}
 
 	if i.parsed != nil {
 		for key, value := range i.parsed {
-			t := xml.StartElement{Name: xml.Name{"", key}}
-			tokens = append(tokens, t, xml.CharData(value.(string)), xml.EndElement{t.Name})
+			t := startLocalName(key)
+			tokens = append(tokens, t, xml.CharData(value.(string)), xml.EndElement{Name: t.Name})
 		}
 	}
-	tokens = append(tokens, xml.EndElement{start.Name})
+	tokens = append(tokens, xml.EndElement{Name: start.Name})
 
 	for _, t := range tokens {
 		err := e.EncodeToken(t)
@@ -143,4 +149,153 @@ func (i InstanceMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) err
 
 	// flush to ensure tokens are written
 	return e.Flush()
+}
+
+type metadataMap map[string]string
+
+// MarshalXML is a custom XML marshaler for metadataMap, mapping each metadata name/value pair to a
+// correspondingly named XML element with the pair's value as character data content.
+func (m metadataMap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	for k, v := range m {
+		if err := e.EncodeElement(v, startLocalName(k)); err != nil {
+			return err
+		}
+	}
+
+	return e.EncodeToken(start.End())
+}
+
+// UnmarshalXML is a custom XML unmarshaler for metadataMap, mapping each XML element's name and
+// character data content to a corresponding metadata name/value pair.
+func (m metadataMap) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var v string
+	for {
+		t, err := d.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		if k, ok := t.(xml.StartElement); ok {
+			if err := d.DecodeElement(&v, &k); err != nil {
+				return err
+			}
+			m[k.Name.Local] = v
+		}
+	}
+	return nil
+}
+
+func metadataValue(i DataCenterInfo) interface{} {
+	if i.Name == Amazon {
+		return i.Metadata
+	}
+	return metadataMap(i.AlternateMetadata)
+}
+
+var (
+	startName     = startLocalName("name")
+	startMetadata = startLocalName("metadata")
+)
+
+// MarshalXML is a custom XML marshaler for DataCenterInfo, writing either Metadata or AlternateMetadata
+// depending on the type of data center indicated by the Name.
+func (i DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+
+	if err := e.EncodeElement(i.Name, startName); err != nil {
+		return err
+	}
+	if err := e.EncodeElement(metadataValue(i), startMetadata); err != nil {
+		return err
+	}
+
+	return e.EncodeToken(start.End())
+}
+
+type preliminaryDataCenterInfo struct {
+	Name     string      `xml:"name" json:"name"`
+	Metadata metadataMap `xml:"metadata" json:"metadata"`
+}
+
+func bindValue(dst *string, src map[string]string, k string) bool {
+	if v, ok := src[k]; ok {
+		*dst = v
+		return true
+	}
+	return false
+}
+
+func populateAmazonMetadata(dst *AmazonMetadataType, src map[string]string) {
+	bindValue(&dst.AmiLaunchIndex, src, "ami-launch-index")
+	bindValue(&dst.LocalHostname, src, "local-hostname")
+	bindValue(&dst.AvailabilityZone, src, "availability-zone")
+	bindValue(&dst.InstanceID, src, "instance-id")
+	bindValue(&dst.PublicIpv4, src, "public-ipv4")
+	bindValue(&dst.PublicHostname, src, "public-hostname")
+	bindValue(&dst.AmiManifestPath, src, "ami-manifest-path")
+	bindValue(&dst.LocalIpv4, src, "local-ipv4")
+	bindValue(&dst.HostName, src, "hostname")
+	bindValue(&dst.AmiID, src, "ami-id")
+	bindValue(&dst.InstanceType, src, "instance-type")
+}
+
+func adaptDataCenterInfo(dst *DataCenterInfo, src preliminaryDataCenterInfo) {
+	dst.Name = src.Name
+	if src.Name == Amazon {
+		populateAmazonMetadata(&dst.Metadata, src.Metadata)
+	} else {
+		dst.AlternateMetadata = src.Metadata
+	}
+}
+
+// UnmarshalXML is a custom XML unmarshaler for DataCenterInfo, populating either Metadata or AlternateMetadata
+// depending on the type of data center indicated by the Name.
+func (i *DataCenterInfo) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	p := preliminaryDataCenterInfo{
+		Metadata: make(map[string]string, 11),
+	}
+	if err := d.DecodeElement(&p, &start); err != nil {
+		return err
+	}
+	adaptDataCenterInfo(i, p)
+	return nil
+}
+
+// MarshalJSON is a custom JSON marshaler for DataCenterInfo, writing either Metadata or AlternateMetadata
+// depending on the type of data center indicated by the Name.
+func (i DataCenterInfo) MarshalJSON() ([]byte, error) {
+	type named struct {
+		Name string `json:"name"`
+	}
+	if i.Name == Amazon {
+		return json.Marshal(struct {
+			named
+			Metadata AmazonMetadataType `json:"metadata"`
+		}{named{i.Name}, i.Metadata})
+	}
+	return json.Marshal(struct {
+		named
+		Metadata map[string]string `json:"metadata"`
+	}{named{i.Name}, i.AlternateMetadata})
+}
+
+// UnmarshalJSON is a custom JSON unmarshaler for DataCenterInfo, populating either Metadata or AlternateMetadata
+// depending on the type of data center indicated by the Name.
+func (i *DataCenterInfo) UnmarshalJSON(b []byte) error {
+	p := preliminaryDataCenterInfo{
+		Metadata: make(map[string]string, 11),
+	}
+	if err := json.Unmarshal(b, &p); err != nil {
+		return err
+	}
+	adaptDataCenterInfo(i, p)
+	return nil
 }
