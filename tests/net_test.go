@@ -3,9 +3,10 @@ package fargo_test
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
+	"testing"
+
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestConnectionCreation(t *testing.T) {
@@ -64,6 +65,8 @@ func TestRegistration(t *testing.T) {
 			}
 			err := e.HeartBeatInstance(&j)
 			So(err, ShouldNotBeNil)
+			So(fargo.InstanceWasMissing(err), ShouldBeTrue)
+			So(fargo.InstanceWasInvalid(err), ShouldBeFalse)
 		})
 		Convey("Register an instance to TESTAPP", t, func() {
 			Convey("Instance registers correctly", func() {
@@ -149,6 +152,8 @@ func DontTestDeregistration(t *testing.T) {
 		Convey("Instance cannot check in", func() {
 			err := e.HeartBeatInstance(&i)
 			So(err, ShouldNotBeNil)
+			So(fargo.InstanceWasMissing(err), ShouldBeTrue)
+			So(fargo.InstanceWasInvalid(err), ShouldBeFalse)
 		})
 	})
 }
