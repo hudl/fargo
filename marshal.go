@@ -107,11 +107,11 @@ func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	i.Raw = b
 	// TODO(cq) could actually parse Raw in a parallel UnmarshalXML as well.
 	var m map[string]interface{}
-	if err := json.Unmarshal(b, &m); err == nil {
-		i.parsed = m
-		return nil
+	if err := json.Unmarshall(b, &m); err != nil {
+    		return err
 	}
-	return err
+	i.parsed = m
+	return nil
 }
 
 // MarshalJSON is a custom JSON marshaler for InstanceMetadata.
