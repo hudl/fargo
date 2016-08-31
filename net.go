@@ -217,7 +217,7 @@ func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
 		log.Errorf("Could not complete deregistration, error: %s", err.Error())
 		return err
 	}
-	if rcode != http.StatusNoContent {
+	if rcode != http.StatusOK {
 		log.Warningf("HTTP returned %d deregistering Instance=%s App=%s", rcode, ins.Id(), ins.App)
 		return &unsuccessfulHTTPResponse{opDeregistration, rcode, "possible failure deregistering instance"}
 	}
