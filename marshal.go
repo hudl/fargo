@@ -105,10 +105,9 @@ func parsePort(s string) int {
 // the raw JSON for later parsing.
 func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	i.Raw = b
-	// TODO(cq) could actually parse Raw here, and in a parallel UnmarshalXML as well.
-	var err error
+	// TODO(cq) could actually parse Raw in a parallel UnmarshalXML as well.
 	var m map[string]interface{}
-	if err = json.Unmarshal(b, &m); err == nil {
+	if err := json.Unmarshal(b, &m); err == nil {
 		i.parsed = m
 		return nil
 	}
