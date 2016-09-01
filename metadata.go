@@ -23,15 +23,15 @@ func (a *Application) ParseAllMetadata() error {
 
 // SetMetadataString for a given instance before register
 func (ins *Instance) SetMetadataString(key, value string) {
-	if ins.Metadata.parsed == nil {
-		ins.Metadata.parsed = map[string]interface{}{}
+	if ins.Metadata.Parsed == nil {
+		ins.Metadata.Parsed = map[string]interface{}{}
 	}
-	ins.Metadata.parsed[key] = value
+	ins.Metadata.Parsed[key] = value
 }
 
 func (im *InstanceMetadata) parse() error {
 	if len(im.Raw) == 0 {
-		im.parsed = make(map[string]interface{})
+		im.Parsed = make(map[string]interface{})
 		log.Debug("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
@@ -39,7 +39,7 @@ func (im *InstanceMetadata) parse() error {
 
 	if len(im.Raw) > 0 && im.Raw[0] == '{' {
 		// JSON
-		err := json.Unmarshal(im.Raw, &im.parsed)
+		err := json.Unmarshal(im.Raw, &im.Parsed)
 		if err != nil {
 			log.Errorf("Error unmarshalling: %s", err.Error())
 			return fmt.Errorf("error unmarshalling: %s", err.Error())
@@ -52,14 +52,14 @@ func (im *InstanceMetadata) parse() error {
 			log.Errorf("Error unmarshalling: %s", err.Error())
 			return fmt.Errorf("error unmarshalling: %s", err.Error())
 		}
-		im.parsed = parsedDoc["d"].(map[string]interface{})
+		im.Parsed = parsedDoc["d"].(map[string]interface{})
 	}
 	return nil
 }
 
 // GetMap returns a map of the metadata parameters for this instance
 func (im *InstanceMetadata) GetMap() map[string]interface{} {
-	return im.parsed
+	return im.Parsed
 }
 
 func (im *InstanceMetadata) getItem(key string) (interface{}, bool, error) {
@@ -67,7 +67,7 @@ func (im *InstanceMetadata) getItem(key string) (interface{}, bool, error) {
 	if err != nil {
 		return "", false, fmt.Errorf("parsing error: %s", err.Error())
 	}
-	val, present := im.parsed[key]
+	val, present := im.Parsed[key]
 	return val, present, nil
 }
 
