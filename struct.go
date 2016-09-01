@@ -113,7 +113,7 @@ type Port struct {
 // metadata.go for more info.
 type InstanceMetadata struct {
 	Raw    []byte `xml:",innerxml" json:"-"`
-	parsed map[string]interface{}
+	Parsed map[string]interface{}  `json:"-"`
 }
 
 // AmazonMetadataType is information about AZ's, AMI's, and the AWS instance
