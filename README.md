@@ -10,13 +10,15 @@ c.GetApps() // returns a map[String]fargo.Application
 
 # Testing
 
-To run the tests, first you'll need to install [vagrant](http://vagrantup.com)
-for your platform. Then run `vagrant up` to create the virtual machines for the
-eureka server tests.
+Tests can be executed using docker container. See the below section to build and start 
+all the required containers. Once fargo container is running:
+
+1. attach shell `docker attach fargo`
+2. Checkout your test branch
+3. execute `go test -v ./...`
 
 The tests may need to be run a couple of times to allow changes to propagate
-between the two eureka servers. To run them, use `go test ./...` from the root
-of the repository. If the tests are failing, try running them again
+between the two eureka servers. If the tests are failing, try running them again
 approximately 30 seconds later.
 
 # Known Issues
@@ -111,18 +113,32 @@ get started.
 1. If you don't have it, [install Docker](https://docs.docker.com/).
 1. Change into the `docker` directory of this repository.
 
-```
+```bash
 # Build the image, change "1.3.1" to 1.1.147 for the older version
 VERSION=1.3.1
 docker build -f Dockerfile-v$VERSION -t hudloss/eureka:$VERSION .
 # Run two copies of the image (the containers will communicate with each other)
 docker run -d --name eureka1 hudloss/eureka:$VERSION
 docker run -d --name eureka2 hudloss/eureka:$VERSION
+
+docker build -f Dockerfile-fargo-master -t hudloss/fargo:master .
+
+# Run fargo container which launches shell
+docker run --name fargo -it hudloss/fargo:master
+# Once shell is attached, checkout your branch and run `go test ./...`
 ```
 
-Now you're all set, and you should have Eureka servers available at
-172.17.0.2:8080 and 172.17.0.3:8080. Run Fargo's tests with `go test ./...`
-from the root of the repository. Happy Hacking!
+Once all containers are running, please check that the IP addresses for 
+`eureka1` and `eureka2` are `172.17.0.2` and `172.17.0.3`. Eureka apps 
+will be available at those IPs on port 8080 from inside containers. 
+To expose the ports to your local machine, start containers using: 
+
+```bash
+# forward port 8080 to local port 48000
+docker run -d -p 48000:8080 --name eureka1 hudloss/eureka:1.1.147
+# forward port 8080 to local port 49000
+docker run -d -p 49000:8080 --name eureka2 hudloss/eureka:1.3.1
+```
 
 # Contributors
 
