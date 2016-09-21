@@ -7,6 +7,3 @@ RUN go get github.com/hudl/fargo
 
 WORKDIR /go/src/github.com/hudl/fargo/
 RUN godep restore
-
-#UNcomment if you want to run tests on master branch.
-#CMD go test -v ./...
