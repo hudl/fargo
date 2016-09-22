@@ -11,19 +11,19 @@ c.GetApps() // returns a map[String]fargo.Application
 # Testing
 
 Tests can be executed using docker container. See the below section to build and start 
-all the required containers. Once eureka containers are running, and fargo container is built.
+all the required containers. Once the Eureka containers are running, and fargo image is built then you can run the command as follows:
 
 Run:
 ```
 docker run --rm -v "$PWD":/go/src/github.com/hudl/fargo -w /go/src/github.com/hudl/fargo hudloss/fargo:master go test -v ./...
 ```
-Note: If you are running bash for windows add `MSYS_NO_PATHCONV=1 ` at the beggining
+Note: If you are running bash for Windows add `MSYS_NO_PATHCONV=1 ` at the beginning.
 
 The tests may need to be run a couple of times to allow changes to propagate
-between the two eureka servers. If the tests are failing, try running them again
+between the two Eureka servers. If the tests are failing, try running them again
 approximately 30 seconds later.
 
-If you are adding new packages to godep you may want to update hudloss/fargo image first.
+If you are adding new packages to godep you may want to update the `hudloss/fargo` image first.
 
 # Known Issues
 
