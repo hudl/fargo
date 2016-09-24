@@ -105,14 +105,19 @@ func parsePort(s string) int {
 // the raw JSON for later parsing.
 func (i *InstanceMetadata) UnmarshalJSON(b []byte) error {
 	i.Raw = b
-	// TODO(cq) could actually parse Raw here, and in a parallel UnmarshalXML as well.
+	// TODO(cq) could actually parse Raw in a parallel UnmarshalXML as well.
+	var m map[string]interface{}
+	if err := json.Unmarshal(b, &m); err != nil {
+    		return err
+	}
+	i.Parsed = m
 	return nil
 }
 
 // MarshalJSON is a custom JSON marshaler for InstanceMetadata.
 func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
-	if i.parsed != nil {
-		return json.Marshal(i.parsed)
+	if i.Parsed != nil {
+		return json.Marshal(i.Parsed)
 	}
 
 	if i.Raw == nil {
@@ -126,8 +131,8 @@ func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
 func (i InstanceMetadata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	tokens := []xml.Token{start}
 
-	if i.parsed != nil {
-		for key, value := range i.parsed {
+	if i.Parsed != nil {
+		for key, value := range i.Parsed {
 			t := xml.StartElement{Name: xml.Name{"", key}}
 			tokens = append(tokens, t, xml.CharData(value.(string)), xml.EndElement{t.Name})
 		}
