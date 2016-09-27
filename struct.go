@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-// EurekaUrlSlugs is a map of resource names -> eureka URLs
+// EurekaUrlSlugs is a map of resource names->Eureka URLs.
 var EurekaURLSlugs = map[string]string{
 	"Apps":      "apps",
 	"Instances": "instances",
 }
 
-// EurekaConnection is the settings required to make eureka requests
+// EurekaConnection is the settings required to make Eureka requests.
 type EurekaConnection struct {
 	ServiceUrls    []string
 	ServicePort    int
@@ -26,30 +26,30 @@ type EurekaConnection struct {
 	UseJson        bool
 }
 
-// GetAppsResponseJson lets us deserialize the eureka/v2/apps response JSON--a wrapped GetAppsResponse
+// GetAppsResponseJson lets us deserialize the eureka/v2/apps response JSON—a wrapped GetAppsResponse.
 type GetAppsResponseJson struct {
 	Response *GetAppsResponse `json:"applications"`
 }
 
-// GetAppsResponse lets us deserialize the eureka/v2/apps response XML
+// GetAppsResponse lets us deserialize the eureka/v2/apps response XML.
 type GetAppsResponse struct {
 	Applications  []*Application `xml:"application" json:"application"`
 	AppsHashcode  string         `xml:"apps__hashcode" json:"apps__hashcode"`
 	VersionsDelta int            `xml:"versions__delta" json:"versions__delta"`
 }
 
-// Application deserializeable from Eureka JSON
+// Application deserializeable from Eureka JSON.
 type GetAppResponseJson struct {
 	Application Application `json:"application"`
 }
 
-// Application deserializeable from Eureka XML
+// Application deserializeable from Eureka XML.
 type Application struct {
 	Name      string      `xml:"name" json:"name"`
 	Instances []*Instance `xml:"instance" json:"instance"`
 }
 
-// StatusType is an enum of the different statuses allowed by Eureka
+// StatusType is an enum of the different statuses allowed by Eureka.
 type StatusType string
 
 // Supported statuses
@@ -67,12 +67,12 @@ const (
 	MyOwn  = "MyOwn"
 )
 
-// RegisterInstanceJson lets us serialize the eureka/v2/apps/<ins> request JSON--a wrapped Instance
+// RegisterInstanceJson lets us serialize the eureka/v2/apps/<ins> request JSON—a wrapped Instance.
 type RegisterInstanceJson struct {
 	Instance *Instance `json:"instance"`
 }
 
-// Instance [de]serializeable [to|from] Eureka XML
+// Instance [de]serializeable [to|from] Eureka XML.
 type Instance struct {
 	XMLName          struct{} `xml:"instance" json:"-"`
 	HostName         string   `xml:"hostName" json:"hostName"`
@@ -102,21 +102,22 @@ type Instance struct {
 	UniqueID func(i Instance) string `xml:"-" json:"-"`
 }
 
-// Port struct used for JSON [un]marshaling only
-// looks like: "port":{"@enabled":"true", "$":"7101"},
+// Port struct used for JSON [un]marshaling only.
+// An example:
+// 	"port":{"@enabled":"true", "$":"7101"}
 type Port struct {
 	Number  string `json:"$"`
 	Enabled string `json:"@enabled"`
 }
 
-// InstanceMetadata represents the eureka metadata, which is arbitrary XML. See
-// metadata.go for more info.
+// InstanceMetadata represents the eureka metadata, which is arbitrary XML.
+// See metadata.go for more info.
 type InstanceMetadata struct {
 	Raw    []byte `xml:",innerxml" json:"-"`
 	parsed map[string]interface{}
 }
 
-// AmazonMetadataType is information about AZ's, AMI's, and the AWS instance
+// AmazonMetadataType is information about AZ's, AMI's, and the AWS instance.
 // <xsd:complexType name="amazonMetdataType">
 // from http://docs.amazonwebservices.com/AWSEC2/latest/DeveloperGuide/index.html?AESDG-chapter-instancedata.html
 type AmazonMetadataType struct {
@@ -133,13 +134,20 @@ type AmazonMetadataType struct {
 	InstanceType     string `xml:"instance-type" json:"instance-type"`
 }
 
-// DataCenterInfo is only really useful when running in AWS.
+// DataCenterInfo indicates which type of data center hosts this instance
+// and conveys details about the instance's environment.
 type DataCenterInfo struct {
-	Name     string             `xml:"name" json:"name"`
-	Metadata AmazonMetadataType `xml:"metadata" json:"metadata"`
+	// Name indicates which type of data center hosts this instance.
+	Name string
+	// Metadata provides details specific to an Amazon data center,
+	// populated and honored when the Name field's value is "Amazon".
+	Metadata AmazonMetadataType
+	// AlternateMetadata provides details specific to a data center other than Amazon,
+	// populated and honored when the Name field's value is not "Amazon".
+	AlternateMetadata map[string]string
 }
 
-// LeaseInfo tells us about the renewal from Eureka, including how old it is
+// LeaseInfo tells us about the renewal from Eureka, including how old it is.
 type LeaseInfo struct {
 	RenewalIntervalInSecs int32 `xml:"renewalIntervalInSecs" json:"renewalIntervalInSecs"`
 	DurationInSecs        int32 `xml:"durationInSecs" json:"durationInSecs"`
