@@ -12,7 +12,10 @@ type unsuccessfulHTTPResponse struct {
 }
 
 func (u *unsuccessfulHTTPResponse) Error() string {
-	return fmt.Sprint(u.messagePrefix, ", rcode = ", u.statusCode)
+	if len(u.messagePrefix) > 0 {
+		return fmt.Sprint(u.messagePrefix, ", rcode = ", u.statusCode)
+	}
+	return fmt.Sprint("rcode = ", u.statusCode)
 }
 
 // HTTPResponseStatusCode extracts the HTTP status code for the response from Eureka that motivated
