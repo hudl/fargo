@@ -131,7 +131,7 @@ func (e *EurekaConnection) RegisterInstance(ins *Instance) error {
 			ins.Id(), ins.App, err.Error())
 		return err
 	}
-	if rcode == 200 {
+	if rcode == http.StatusOK {
 		log.Noticef("Instance=%s already exists in App=%s, aborting registration", ins.Id(), ins.App)
 		return nil
 	}
@@ -164,7 +164,7 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	if rcode != 204 {
 		log.Warningf("HTTP returned %d registering Instance=%s App=%s Body=\"%s\"", rcode,
 			ins.Id(), ins.App, string(body))
-		return fmt.Errorf("http returned %d possible failure registering instance\n", rcode)
+		return &unsuccessfulHTTPResponse{rcode, "possible failure registering instance"}
 	}
 
 	// read back our registration to pick up eureka-supplied values
@@ -182,8 +182,8 @@ func (e *EurekaConnection) GetInstance(app, insId string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rcode != 200 {
-		return nil, fmt.Errorf("Error getting instance, rcode = %d", rcode)
+	if rcode != http.StatusOK {
+		return nil, &unsuccessfulHTTPResponse{rcode, "unable to retrieve instance"}
 	}
 	var ins *Instance
 	if e.UseJson {
@@ -219,9 +219,9 @@ func (e *EurekaConnection) DeregisterInstance(ins *Instance) error {
 	}
 	// Eureka promises to return HTTP status code upon deregistration success, but fargo used to accept status code 204
 	// here instead. Accommodate both for backward compatibility with any fake or proxy Eureka stand-ins.
-	if rcode != 200 && rcode != 204 {
+	if rcode != http.StatusOK && rcode != http.StatusNoContent {
 		log.Warningf("HTTP returned %d deregistering Instance=%s App=%s", rcode, ins.Id(), ins.App)
-		return fmt.Errorf("http returned %d possible failure deregistering instance\n", rcode)
+		return &unsuccessfulHTTPResponse{rcode, "possible failure deregistering instance"}
 	}
 
 	return nil
@@ -243,7 +243,7 @@ func (e EurekaConnection) AddMetadataString(ins *Instance, key, value string) er
 	if rcode < 200 || rcode >= 300 {
 		log.Warningf("HTTP returned %d updating metadata Instance=%s App=%s Body=\"%s\"", rcode,
 			ins.Id(), ins.App, string(body))
-		return fmt.Errorf("http returned %d possible failure updating instance metadata ", rcode)
+		return &unsuccessfulHTTPResponse{rcode, "possible failure updating instance metadata"}
 	}
 	ins.SetMetadataString(key, value)
 	return nil
@@ -265,7 +265,7 @@ func (e EurekaConnection) UpdateInstanceStatus(ins *Instance, status StatusType)
 	if rcode < 200 || rcode >= 300 {
 		log.Warningf("HTTP returned %d updating status Instance=%s App=%s Body=\"%s\"", rcode,
 			ins.Id(), ins.App, string(body))
-		return fmt.Errorf("http returned %d possible failure updating instance status ", rcode)
+		return &unsuccessfulHTTPResponse{rcode, "possible failure updating instance status"}
 	}
 	return nil
 }
@@ -286,9 +286,9 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 		log.Errorf("Error sending heartbeat for Instance=%s App=%s, error: %s", ins.Id(), ins.App, err.Error())
 		return err
 	}
-	if rcode != 200 {
+	if rcode != http.StatusOK {
 		log.Errorf("Sending heartbeat for Instance=%s App=%s returned code %d", ins.Id(), ins.App, rcode)
-		return fmt.Errorf("heartbeat returned code %d\n", rcode)
+		return &unsuccessfulHTTPResponse{rcode, "heartbeat failed"}
 	}
 	return nil
 }

@@ -3,10 +3,32 @@ package fargo_test
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
+	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
+
+func shouldNotBearAnHTTPStatusCode(actual interface{}, expected ...interface{}) string {
+	if code, present := fargo.HTTPResponseStatusCode(actual.(error)); present {
+		return fmt.Sprintf("Expected: no HTTP status code\nActual:   %d", code)
+	}
+	return ""
+}
+
+func shouldBearHTTPStatusCode(actual interface{}, expected ...interface{}) string {
+	expectedCode := expected[0]
+	code, present := fargo.HTTPResponseStatusCode(actual.(error))
+	if !present {
+		return fmt.Sprintf("Expected: %d\nActual:   no HTTP status code", expectedCode)
+	}
+	if code != expectedCode {
+		return fmt.Sprintf("Expected: %d\nActual:   %d", expectedCode, code)
+	}
+	return ""
+}
 
 func TestConnectionCreation(t *testing.T) {
 	Convey("Pull applications", t, func() {
@@ -64,6 +86,7 @@ func TestRegistration(t *testing.T) {
 			}
 			err := e.HeartBeatInstance(&j)
 			So(err, ShouldNotBeNil)
+			So(err, shouldBearHTTPStatusCode, http.StatusNotFound)
 		})
 		Convey("Register an instance to TESTAPP", t, func() {
 			Convey("Instance registers correctly", func() {
@@ -149,6 +172,7 @@ func DontTestDeregistration(t *testing.T) {
 		Convey("Instance cannot check in", func() {
 			err := e.HeartBeatInstance(&i)
 			So(err, ShouldNotBeNil)
+			So(err, shouldBearHTTPStatusCode, http.StatusNotFound)
 		})
 	})
 }
