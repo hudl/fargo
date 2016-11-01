@@ -5,7 +5,9 @@ package fargo_test
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/hudl/fargo"
 	. "github.com/smartystreets/goconvey/convey"
@@ -30,6 +32,59 @@ func shouldBearHTTPStatusCode(actual interface{}, expected ...interface{}) strin
 	return ""
 }
 
+func withCustomRegisteredInstance(e *fargo.EurekaConnection, application string, hostName string, f func(i *fargo.Instance)) func() {
+	return func() {
+		vipAddress := "app"
+		i := &fargo.Instance{
+			HostName:         hostName,
+			Port:             9090,
+			App:              application,
+			IPAddr:           "127.0.0.10",
+			VipAddress:       vipAddress,
+			DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+			SecureVipAddress: vipAddress,
+			Status:           fargo.UP,
+			LeaseInfo: fargo.LeaseInfo{
+				DurationInSecs: 90,
+			},
+		}
+		So(e.ReregisterInstance(i), ShouldBeNil)
+
+		var wg sync.WaitGroup
+		stop := make(chan struct{})
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case <-ticker.C:
+					if err := e.HeartBeatInstance(i); err != nil {
+						if code, ok := fargo.HTTPResponseStatusCode(err); ok && code == http.StatusNotFound {
+							e.ReregisterInstance(i)
+						}
+					}
+				}
+			}
+		}()
+
+		Reset(func() {
+			close(stop)
+			wg.Wait()
+			So(e.DeregisterInstance(i), ShouldBeNil)
+		})
+
+		f(i)
+	}
+}
+
+func withRegisteredInstance(e *fargo.EurekaConnection, f func(i *fargo.Instance)) func() {
+	return withCustomRegisteredInstance(e, "TESTAPP", "i-123456", f)
+}
+
 func TestConnectionCreation(t *testing.T) {
 	Convey("Pull applications", t, func() {
 		cfg, err := fargo.ReadConfig("./config_sample/local.gcfg")
@@ -46,16 +101,115 @@ func TestGetApps(t *testing.T) {
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Pull applications", t, func() {
-			a, _ := e.GetApps()
+			a, err := e.GetApps()
+			So(err, ShouldBeNil)
 			So(len(a["EUREKA"].Instances), ShouldEqual, 2)
 		})
 		Convey("Pull single application", t, func() {
-			a, _ := e.GetApp("EUREKA")
+			a, err := e.GetApp("EUREKA")
+			So(err, ShouldBeNil)
 			So(len(a.Instances), ShouldEqual, 2)
 			for _, ins := range a.Instances {
 				So(ins.IPAddr, ShouldBeIn, []string{"172.17.0.2", "172.17.0.3"})
 			}
 		})
+	}
+}
+
+func TestGetInstancesByNonexistentVIPAddress(t *testing.T) {
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	for _, e.UseJson = range []bool{false, true} {
+		Convey("Get instances by VIP address", t, func() {
+			Convey("when the VIP address has no instances", func() {
+				instances, err := e.GetInstancesByVIPAddress("nonexistent")
+				So(err, ShouldBeNil)
+				So(instances, ShouldBeEmpty)
+			})
+			Convey("when the secure VIP address has no instances", func() {
+				instances, err := e.GetInstancesBySecureVIPAddress("nonexistent")
+				So(err, ShouldBeNil)
+				So(instances, ShouldBeEmpty)
+			})
+		})
+	}
+}
+
+func TestGetSingleInstanceByVIPAddress(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	cacheDelay := 35 * time.Second
+	vipAddress := "app"
+	for _, e.UseJson = range []bool{false, true} {
+		Convey("When the VIP address has one instance", t, withRegisteredInstance(&e, func(instance *fargo.Instance) {
+			time.Sleep(cacheDelay)
+			instances, err := e.GetInstancesByVIPAddress(vipAddress)
+			So(err, ShouldBeNil)
+			So(instances, ShouldHaveLength, 1)
+			So(instances[0].VipAddress, ShouldEqual, vipAddress)
+			Convey("requesting the instances by that VIP address with status UP should provide that one", func() {
+				instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp())
+				So(err, ShouldBeNil)
+				So(instances, ShouldHaveLength, 1)
+				So(instances[0].VipAddress, ShouldEqual, vipAddress)
+				Convey("and when the instance has a status other than UP", func() {
+					otherStatus := fargo.OUTOFSERVICE
+					So(otherStatus, ShouldNotEqual, fargo.UP)
+					err := e.UpdateInstanceStatus(instance, otherStatus)
+					So(err, ShouldBeNil)
+					Convey("selecting instances with that other status should provide that one", func() {
+						time.Sleep(cacheDelay)
+						instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.WithStatus(otherStatus))
+						So(err, ShouldBeNil)
+						So(instances, ShouldHaveLength, 1)
+						Convey("And selecting instances with status UP should provide none", func() {
+							// Ensure that we tolerate a nil option safely.
+							instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp(), nil)
+							So(err, ShouldBeNil)
+							So(instances, ShouldBeEmpty)
+						})
+					})
+				})
+			})
+		}))
+		Convey("When the secure VIP address has one instance", t, withRegisteredInstance(&e, func(_ *fargo.Instance) {
+			Convey("requesting the instances by that VIP address should provide that one", func() {
+				time.Sleep(cacheDelay)
+				// Ensure that we tolerate a nil option safely.
+				instances, err := e.GetInstancesBySecureVIPAddress(vipAddress, nil)
+				So(err, ShouldBeNil)
+				So(instances, ShouldHaveLength, 1)
+				So(instances[0].SecureVipAddress, ShouldEqual, vipAddress)
+			})
+		}))
+		time.Sleep(cacheDelay)
+	}
+}
+
+func TestGetMultipleInstancesByVIPAddress(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	cacheDelay := 35 * time.Second
+	for _, e.UseJson = range []bool{false, true} {
+		Convey("When the VIP address has one instance", t, withRegisteredInstance(&e, func(instance *fargo.Instance) {
+			Convey("when the VIP address has two instances", withCustomRegisteredInstance(&e, "TESTAPP2", "i-234567", func(_ *fargo.Instance) {
+				Convey("requesting the instances by that VIP address should provide them", func() {
+					time.Sleep(cacheDelay)
+					vipAddress := "app"
+					instances, err := e.GetInstancesByVIPAddress(vipAddress)
+					So(err, ShouldBeNil)
+					So(instances, ShouldHaveLength, 2)
+					for _, ins := range instances {
+						So(ins.VipAddress, ShouldEqual, vipAddress)
+					}
+					So(instances[0], ShouldNotEqual, instances[1])
+				})
+			}))
+		}))
+		time.Sleep(cacheDelay)
 	}
 }
 

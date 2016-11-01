@@ -6,10 +6,12 @@ import (
 	"time"
 )
 
-// EurekaUrlSlugs is a map of resource names->Eureka URLs.
+// EurekaURLSlugs is a map of resource names->Eureka URLs.
 var EurekaURLSlugs = map[string]string{
-	"Apps":      "apps",
-	"Instances": "instances",
+	"Apps":                        "apps",
+	"Instances":                   "instances",
+	"InstancesByVIPAddress":       "vips",
+	"InstancesBySecureVIPAddress": "svips",
 }
 
 // EurekaConnection is the settings required to make Eureka requests.

@@ -5,7 +5,9 @@ package fargo
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -116,6 +118,233 @@ func (e *EurekaConnection) GetApps() (map[string]*Application, error) {
 		app.ParseAllMetadata()
 	}
 	return apps, nil
+}
+
+func instanceCount(apps []*Application) int {
+	count := 0
+	for _, app := range apps {
+		count += len(app.Instances)
+	}
+	return count
+}
+
+type instanceQueryOptions struct {
+	// secure indicates whether to query a secure or an insecure VIP address.
+	secure bool
+	// predicate guides filtering, indicating whether to retain an instance when it returns true or
+	// drop it when it returns false.
+	predicate func(*Instance) bool
+	// intn behaves like the rand.Rand.Intn function, aiding in randomizing the order of the result
+	// sequence when non-nil.
+	intn func(int) int
+}
+
+// InstanceQueryOption is a customization supplied to instance query functions like
+// GetInstancesByVIPAddress to tailor the set of instances returned.
+type InstanceQueryOption func(*instanceQueryOptions) error
+
+func retainIfStatusIs(status StatusType, o *instanceQueryOptions) {
+	if prev := o.predicate; prev != nil {
+		o.predicate = func(instance *Instance) bool {
+			return prev(instance) || instance.Status == status
+		}
+	} else {
+		o.predicate = func(instance *Instance) bool {
+			return instance.Status == status
+		}
+	}
+}
+
+// WithStatus restricts the set of instances returned to only those with the given status.
+//
+// Supplying multiple options produced by this function applies their logical disjunction.
+func WithStatus(status StatusType) InstanceQueryOption {
+	return func(o *instanceQueryOptions) error {
+		if len(status) == 0 {
+			return errors.New("invalid instance status")
+		}
+		retainIfStatusIs(status, o)
+		return nil
+	}
+}
+
+func makeUncheckedStatusMatchingOption(status StatusType) InstanceQueryOption {
+	return func(o *instanceQueryOptions) error {
+		retainIfStatusIs(status, o)
+		return nil
+	}
+}
+
+// ThatAreUp restricts the set of instances returned to only those with status UP.
+//
+// Combining the options produced by this function with those produced by WithStatus applies their
+// logical disjunction.
+func ThatAreUp() InstanceQueryOption {
+	return makeUncheckedStatusMatchingOption(UP)
+}
+
+// Shuffled requests randomizing the order of the sequence of instances returned, using the default
+// shared rand.Source.
+func Shuffled() InstanceQueryOption {
+	return func(o *instanceQueryOptions) error {
+		o.intn = rand.Intn
+		return nil
+	}
+}
+
+// ShuffledWith requests randomizing the order of the sequence of instances returned, using the
+// supplied source of random numbers.
+func ShuffledWith(r *rand.Rand) InstanceQueryOption {
+	return func(o *instanceQueryOptions) error {
+		o.intn = r.Intn
+		return nil
+	}
+}
+
+func shuffleInstances(instances []*Instance, intn func(int) int) {
+	count := len(instances)
+	if count < 2 {
+		return
+	}
+	if intn(2) == 0 {
+		instances[1], instances[0] = instances[0], instances[1]
+	}
+	for i := 2; i != count; i++ {
+		if j := intn(i + 1); j != i {
+			instances[i], instances[j] = instances[j], instances[i]
+		}
+	}
+}
+
+func filterInstances(instances []*Instance, pred func(*Instance) bool) []*Instance {
+	for firstBegin, instance := range instances {
+		if !pred(instance) {
+			continue
+		}
+		// We found the first item to keep. Where is the next item to drop?
+		for firstEnd, count := firstBegin+1, len(instances); firstEnd != count; firstEnd++ {
+			if !pred(instances[firstEnd]) {
+				// We found the first range of items to keep, followed by at least one to drop.
+				for secondBegin := firstEnd + 1; secondBegin != count; secondBegin++ {
+					if instance := instances[secondBegin]; pred(instance) {
+						// We found at least one other item to keep, so we'll have to concatenate the first range with the rest.
+						filtered := make([]*Instance, firstEnd-firstBegin+1, count-firstBegin-(secondBegin-firstEnd))
+						filtered[copy(filtered, instances[firstBegin:firstEnd])] = instance
+						for _, instance := range instances[secondBegin+1:] {
+							if pred(instance) {
+								filtered = append(filtered, instance)
+							}
+						}
+						return filtered
+					}
+				}
+				return instances[firstBegin:firstEnd]
+			}
+		}
+		return instances[firstBegin:]
+	}
+	return nil
+}
+
+func filterInstancesInApps(apps []*Application, pred func(*Instance) bool) []*Instance {
+	switch len(apps) {
+	case 0:
+		return nil
+	case 1:
+		return filterInstances(apps[0].Instances, pred)
+	default:
+		instances := make([]*Instance, 0, instanceCount(apps))
+		for _, app := range apps {
+			for _, instance := range app.Instances {
+				if pred(instance) {
+					instances = append(instances, instance)
+				}
+			}
+		}
+		return instances
+	}
+}
+
+func (e *EurekaConnection) getInstancesByVIPAddress(addr string, opts instanceQueryOptions) ([]*Instance, error) {
+	var slug string
+	if opts.secure {
+		slug = EurekaURLSlugs["InstancesBySecureVIPAddress"]
+	} else {
+		slug = EurekaURLSlugs["InstancesByVIPAddress"]
+	}
+	reqURL := e.generateURL(slug, addr)
+	log.Debugf("Getting instances for VIP address %q from URL %s", addr, reqURL)
+	body, rcode, err := getBody(reqURL, e.UseJson)
+	if err != nil {
+		return nil, err
+	}
+	if rcode != http.StatusOK {
+		return nil, &unsuccessfulHTTPResponse{rcode, "unable to retrieve instances by VIP address"}
+	}
+	var r *GetAppsResponse
+	if e.UseJson {
+		var rj GetAppsResponseJson
+		err = json.Unmarshal(body, &rj)
+		r = rj.Response
+	} else {
+		err = xml.Unmarshal(body, &r)
+	}
+	if err != nil {
+		log.Errorf("Unmarshalling error: %s", err.Error())
+		return nil, err
+	}
+	var instances []*Instance
+	if pred := opts.predicate; pred != nil {
+		instances = filterInstancesInApps(r.Applications, pred)
+	} else {
+		switch len(r.Applications) {
+		case 0:
+		case 1:
+			instances = r.Applications[0].Instances
+		default:
+			instances = make([]*Instance, instanceCount(r.Applications))
+			base := 0
+			for _, app := range r.Applications {
+				base += copy(instances[base:], app.Instances)
+			}
+		}
+	}
+	if intn := opts.intn; intn != nil {
+		shuffleInstances(instances, intn)
+	}
+	return instances, nil
+}
+
+// GetInstancesByVIPAddress returns the set of instances registered with the given VIP address,
+// potentially filtered per the constraints supplied as options.
+//
+// NB: The VIP address is case-sensitive, and must match the address used at registration time.
+func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, opts ...InstanceQueryOption) ([]*Instance, error) {
+	var mergedOptions instanceQueryOptions
+	for _, o := range opts {
+		if o != nil {
+			if err := o(&mergedOptions); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return e.getInstancesByVIPAddress(addr, mergedOptions)
+}
+
+// GetInstancesBySecureVIPAddress returns the set of instances registered with the given secure
+// VIP address, potentially filtered per the constraints supplied as options.
+//
+// NB: The secure VIP address is case-sensitive, and must match the address used at registration time.
+func (e *EurekaConnection) GetInstancesBySecureVIPAddress(addr string, opts ...InstanceQueryOption) ([]*Instance, error) {
+	mergedOptions := instanceQueryOptions{secure: true}
+	for _, o := range opts {
+		if o != nil {
+			if err := o(&mergedOptions); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return e.getInstancesByVIPAddress(addr, mergedOptions)
 }
 
 // RegisterInstance will register the given Instance with eureka if it is not already registered,
