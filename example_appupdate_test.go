@@ -9,7 +9,8 @@ import (
 	"github.com/hudl/fargo"
 )
 
-func ExampleEurekaConnection_ScheduleAppUpdates(e *fargo.EurekaConnection) {
+func ExampleEurekaConnection_ScheduleAppUpdates() {
+	e := makeConnection()
 	done := make(chan struct{})
 	time.AfterFunc(2*time.Minute, func() {
 		close(done)
@@ -26,7 +27,8 @@ func ExampleEurekaConnection_ScheduleAppUpdates(e *fargo.EurekaConnection) {
 	fmt.Printf("Done monitoring application %q.\n", name)
 }
 
-func ExampleAppSource_Latest(e *fargo.EurekaConnection) {
+func ExampleAppSource_Latest() {
+	e := makeConnection()
 	name := "my_app"
 	source := e.NewAppSource(name, false)
 	defer source.Stop()
@@ -40,7 +42,8 @@ func ExampleAppSource_Latest(e *fargo.EurekaConnection) {
 	}
 }
 
-func ExampleAppSource_CopyLatestTo(e *fargo.EurekaConnection) {
+func ExampleAppSource_CopyLatestTo() {
+	e := makeConnection()
 	name := "my_app"
 	source := e.NewAppSource(name, true)
 	defer source.Stop()
