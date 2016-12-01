@@ -1,13 +1,15 @@
-package fargo
+package fargo_test
 
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
 	"fmt"
 	"time"
+
+	"github.com/hudl/fargo"
 )
 
-func ExampleEurekaConnection_ScheduleAppUpdates(e *EurekaConnection) {
+func ExampleEurekaConnection_ScheduleAppUpdates(e *fargo.EurekaConnection) {
 	done := make(chan struct{})
 	time.AfterFunc(2*time.Minute, func() {
 		close(done)
@@ -24,7 +26,7 @@ func ExampleEurekaConnection_ScheduleAppUpdates(e *EurekaConnection) {
 	fmt.Printf("Done monitoring application %q.\n", name)
 }
 
-func ExampleAppSource_Latest(e *EurekaConnection) {
+func ExampleAppSource_Latest(e *fargo.EurekaConnection) {
 	name := "my_app"
 	source := e.NewAppSource(name, false)
 	defer source.Stop()
@@ -38,11 +40,11 @@ func ExampleAppSource_Latest(e *EurekaConnection) {
 	}
 }
 
-func ExampleAppSource_CopyLatestTo(e *EurekaConnection) {
+func ExampleAppSource_CopyLatestTo(e *fargo.EurekaConnection) {
 	name := "my_app"
 	source := e.NewAppSource(name, true)
 	defer source.Stop()
-	var app Application
+	var app fargo.Application
 	if !source.CopyLatestTo(&app) {
 		fmt.Printf("No application named %q is available.\n", name)
 	}
