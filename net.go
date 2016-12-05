@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -482,6 +483,122 @@ func (e *EurekaConnection) ScheduleSecureVIPAddressUpdates(addr string, await bo
 		return nil, err
 	}
 	return e.scheduleVIPAddressUpdates(addr, await, done, options), nil
+}
+
+// An InstanceSetSource holds a periodically updated set of instances registered with Eureka.
+type InstanceSetSource struct {
+	m         *sync.RWMutex
+	instances []*Instance
+	done      chan<- struct{}
+}
+
+func newInstanceSetSourceFromChannel(await bool, updates <-chan InstanceSetUpdate, done chan<- struct{}) *InstanceSetSource {
+	s := &InstanceSetSource{
+		done: done,
+	}
+	// NB: If an application contained no instances, such that it either lacked the "instance" field
+	// entirely or had it present but with a "null" value, or none of the present instances
+	// satisfied the filtering predicate, then it's possible that the slice returned by
+	// getInstancesByVIPAddress (or similar) will be nil. Make it possible to discern when we've
+	// received at least one update in Latest by never storing a nil value for a successful update.
+	if await {
+		if u := <-updates; u.Err != nil {
+			if proposed := u.Instances; proposed != nil {
+				s.instances = proposed
+			} else {
+				s.instances = []*Instance{}
+			}
+		}
+	}
+	go func() {
+		for u := range updates {
+			var latest []*Instance
+			if u.Err != nil {
+				if proposed := u.Instances; proposed != nil {
+					latest = proposed
+				} else {
+					latest = []*Instance{}
+				}
+			}
+			s.m.Lock()
+			s.instances = latest
+			s.m.Unlock()
+		}
+
+	}()
+	return s
+}
+
+// NewInstanceSetSourceForVIPAddress returns a new InstantSetSource that offers a periodically
+// updated set of instances registered with the given Eureka VIP address, potentially filtered per
+// the constraints supplied as options, using the connection's configured polling interval as its
+// period.
+//
+// If await is true, it waits for the first instance set update to complete before returning, though
+// it's possible that that first update attempt could fail, so that a subsequent call to Latest
+// would return nil.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) NewInstanceSetSourceForVIPAddress(addr string, await bool, opts ...InstanceQueryOption) (*InstanceSetSource, error) {
+	done := make(chan struct{})
+	updates, err := e.ScheduleVIPAddressUpdates(addr, await, done, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return newInstanceSetSourceFromChannel(await, updates, done), nil
+}
+
+// NewInstanceSetSourceForSecureVIPAddress returns a new InstantSetSource that offers a periodically
+// updated set of instances registered with the given secure Eureka VIP address, potentially
+// filtered per the constraints supplied as options, using the connection's configured polling
+// interval as its period.
+//
+// If await is true, it waits for the first instance set update to complete before returning, though
+// it's possible that that first update attempt could fail, so that a subsequent call to Latest
+// would return nil.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) NewInstanceSetSourceForSecureVIPAddress(addr string, await bool, opts ...InstanceQueryOption) (*InstanceSetSource, error) {
+	done := make(chan struct{})
+	updates, err := e.ScheduleSecureVIPAddressUpdates(addr, await, done, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return newInstanceSetSourceFromChannel(await, updates, done), nil
+}
+
+// Latest returns the most recently acquired set of Eureka instances, if any. If the most recent
+// update attempt failed, or if no update attempt has yet to complete, it returns nil.
+//
+// Note that if the most recent update attempt was successful but resulted in no instances, it
+// returns a non-nil empty slice.
+func (s *InstanceSetSource) Latest() []*Instance {
+	if s == nil {
+		return nil
+	}
+	s.m.RLock()
+	defer s.m.RUnlock()
+	return s.instances
+}
+
+// Stop turns off an InstantSetSource, so that it will no longer attempt to update its latest set of
+// Eureka instances.
+//
+// It is safe to call Latest or CopyLatestTo on a stopped source.
+func (s *InstanceSetSource) Stop() {
+	if s == nil {
+		return
+	}
+	// Allow multiple calls to Stop by precluding repeated attempts to close an already closed
+	// channel.
+	s.m.Lock()
+	defer s.m.Unlock()
+	if s.done != nil {
+		close(s.done)
+		s.done = nil
+	}
 }
 
 // RegisterInstance will register the given Instance with eureka if it is not already registered,

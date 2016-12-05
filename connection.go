@@ -155,7 +155,8 @@ type AppSource struct {
 //
 // If await is true, it waits for the first application update to complete
 // before returning, though it's possible that that first update attempt could
-// fail, so that a subsequent call to CopyLatestAppTo would return false.
+// fail, so that a subsequent call to Latest would return nil and CopyLatestTo
+// would return false.
 func (e *EurekaConnection) NewAppSource(name string, await bool) *AppSource {
 	done := make(chan struct{})
 	updates := e.ScheduleAppUpdates(name, await, done)
@@ -169,17 +170,15 @@ func (e *EurekaConnection) NewAppSource(name string, await bool) *AppSource {
 	}
 	go func() {
 		for u := range updates {
-			if u.Err != nil {
-				s.m.Lock()
-				s.app = u.App
-				s.m.Unlock()
-			}
+			s.m.Lock()
+			s.app = u.App
+			s.m.Unlock()
 		}
 	}()
 	return s
 }
 
-// Latest returns the most recently acquired Eureke application, if any. If the
+// Latest returns the most recently acquired Eureka application, if any. If the
 // most recent update attempt failed, or if no update attempt has yet to
 // complete, it returns nil.
 func (s *AppSource) Latest() *Application {

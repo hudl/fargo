@@ -34,7 +34,7 @@ func ExampleAppSource_Latest() {
 	defer source.Stop()
 	time.Sleep(30 * time.Second)
 	if app := source.Latest(); app != nil {
-		fmt.Printf("Application %q has %d instances\n.", name, len(app.Instances))
+		fmt.Printf("Application %q has %d instances.\n", name, len(app.Instances))
 	}
 	time.Sleep(time.Minute)
 	if app := source.Latest(); app == nil {
@@ -53,6 +53,6 @@ func ExampleAppSource_CopyLatestTo() {
 	}
 	time.Sleep(time.Minute)
 	if source.CopyLatestTo(&app) {
-		fmt.Printf("Application %q has %d instances\n.", name, len(app.Instances))
+		fmt.Printf("Application %q has %d instances.\n", name, len(app.Instances))
 	}
 }
