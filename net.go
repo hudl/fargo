@@ -131,8 +131,6 @@ func instanceCount(apps []*Application) int {
 }
 
 type instanceQueryOptions struct {
-	// secure indicates whether to query a secure or an insecure VIP address.
-	secure bool
 	// predicate guides filtering, indicating whether to retain an instance when it returns true or
 	// drop it when it returns false.
 	predicate func(*Instance) bool
@@ -318,9 +316,16 @@ func filterInstancesInApps(apps []*Application, pred func(*Instance) bool) []*In
 	}
 }
 
-func (e *EurekaConnection) getInstancesByVIPAddress(addr string, opts instanceQueryOptions) ([]*Instance, error) {
+type vipAddressKind bool
+
+const (
+	insecure vipAddressKind = false
+	secure   vipAddressKind = true
+)
+
+func (e *EurekaConnection) getInstancesByVIPAddress(addr string, kind vipAddressKind, opts instanceQueryOptions) ([]*Instance, error) {
 	var slug string
-	if opts.secure {
+	if kind == secure {
 		slug = EurekaURLSlugs["InstancesBySecureVIPAddress"]
 	} else {
 		slug = EurekaURLSlugs["InstancesByVIPAddress"]
@@ -392,7 +397,7 @@ func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, opts ...Instanc
 	if err != nil {
 		return nil, err
 	}
-	return e.getInstancesByVIPAddress(addr, options)
+	return e.getInstancesByVIPAddress(addr, insecure, options)
 }
 
 // GetInstancesBySecureVIPAddress returns the set of instances registered with the given secure
@@ -400,11 +405,11 @@ func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, opts ...Instanc
 //
 // NB: The secure VIP address is case-sensitive, and must match the address used at registration time.
 func (e *EurekaConnection) GetInstancesBySecureVIPAddress(addr string, opts ...InstanceQueryOption) ([]*Instance, error) {
-	options, err := mergeInstanceQueryOptions(instanceQueryOptions{secure: true}, opts)
+	options, err := collectInstanceQueryOptions(opts)
 	if err != nil {
 		return nil, err
 	}
-	return e.getInstancesByVIPAddress(addr, options)
+	return e.getInstancesByVIPAddress(addr, secure, options)
 }
 
 // InstanceSetUpdate is the outcome of an attempt to get a fresh snapshot of a Eureka VIP address's
@@ -433,9 +438,9 @@ func sendVIPAddressUpdatesEvery(d time.Duration, produce func() InstanceSetUpdat
 	}
 }
 
-func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
+func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, kind vipAddressKind, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
 	produce := func() InstanceSetUpdate {
-		instances, err := e.getInstancesByVIPAddress(addr, opts)
+		instances, err := e.getInstancesByVIPAddress(addr, kind, opts)
 		return InstanceSetUpdate{instances, err}
 	}
 	c := make(chan InstanceSetUpdate, 1)
@@ -462,7 +467,7 @@ func (e *EurekaConnection) ScheduleVIPAddressUpdates(addr string, await bool, do
 	if err != nil {
 		return nil, err
 	}
-	return e.scheduleVIPAddressUpdates(addr, await, done, options), nil
+	return e.scheduleVIPAddressUpdates(addr, insecure, await, done, options), nil
 }
 
 // ScheduleSecureVIPAddressUpdates starts polling for updates to the set of instances registered
@@ -478,11 +483,11 @@ func (e *EurekaConnection) ScheduleVIPAddressUpdates(addr string, await bool, do
 // It returns an error if any of the supplied options are invalid, precluding it from scheduling the
 // intended updates.
 func (e *EurekaConnection) ScheduleSecureVIPAddressUpdates(addr string, await bool, done <-chan struct{}, opts ...InstanceQueryOption) (<-chan InstanceSetUpdate, error) {
-	options, err := mergeInstanceQueryOptions(instanceQueryOptions{secure: true}, opts)
+	options, err := collectInstanceQueryOptions(opts)
 	if err != nil {
 		return nil, err
 	}
-	return e.scheduleVIPAddressUpdates(addr, await, done, options), nil
+	return e.scheduleVIPAddressUpdates(addr, secure, await, done, options), nil
 }
 
 // An InstanceSetSource holds a periodically updated set of instances registered with Eureka.
