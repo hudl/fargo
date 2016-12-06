@@ -574,6 +574,54 @@ func (e *EurekaConnection) NewInstanceSetSourceForSecureVIPAddress(addr string, 
 	return newInstanceSetSourceFromChannel(await, updates, done), nil
 }
 
+// NewInstanceSetSourceForApp returns a new InstantSetSource that offers a periodically updated set
+// of instances from the Eureka application with the given name, potentially filtered per the
+// constraints supplied as options, using the connection's configured polling interval as its
+// period.
+//
+// If await is true, it waits for the first instance set update to complete before returning, though
+// it's possible that that first update attempt could fail, so that a subsequent call to Latest
+// would return nil.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) NewInstanceSetSourceForApp(name string, await bool, opts ...InstanceQueryOption) (*InstanceSetSource, error) {
+	options, err := collectInstanceQueryOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	done := make(chan struct{})
+	downstream := make(chan InstanceSetUpdate, 1)
+	go func() {
+		predicate := options.predicate
+		intn := options.intn
+		// This channel will be closed when done is closed via a call to InstanceSetSource.Stop.
+		upstream := e.ScheduleAppUpdates(name, false, done)
+		for u := range upstream {
+			var update InstanceSetUpdate
+			if err := u.Err; err != nil {
+				update.Err = err
+			} else if instances := u.App.Instances; instances != nil {
+				if predicate != nil {
+					instances = filterInstances(instances, predicate)
+				}
+				if intn != nil {
+					shuffleInstances(instances, intn)
+				}
+				update.Instances = instances
+			} else {
+				update.Instances = []*Instance{}
+			}
+			// Drop attempted sends when the consumer hasn't received the last buffered update.
+			select {
+			case downstream <- update:
+			default:
+			}
+		}
+	}()
+	return newInstanceSetSourceFromChannel(await, downstream, done), nil
+}
+
 // Latest returns the most recently acquired set of Eureka instances, if any. If the most recent
 // update attempt failed, or if no update attempt has yet to complete, it returns nil.
 //
