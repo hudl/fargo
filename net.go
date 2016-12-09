@@ -434,10 +434,7 @@ func exchangeInstancesEvery(d time.Duration, produce func() ([]*Instance, error)
 	}
 }
 
-func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, kind vipAddressKind, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
-	produce := func() ([]*Instance, error) {
-		return e.getInstancesByVIPAddress(addr, kind, opts)
-	}
+func scheduleInstanceUpdates(d time.Duration, produce func() ([]*Instance, error), await bool, done <-chan struct{}) <-chan InstanceSetUpdate {
 	c := make(chan InstanceSetUpdate, 1)
 	if await {
 		instances, err := produce()
@@ -452,9 +449,16 @@ func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, kind vipAddres
 	}
 	go func() {
 		defer close(c)
-		exchangeInstancesEvery(time.Duration(e.PollInterval)*time.Second, produce, consume, done)
+		exchangeInstancesEvery(d, produce, consume, done)
 	}()
 	return c
+}
+
+func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, kind vipAddressKind, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
+	produce := func() ([]*Instance, error) {
+		return e.getInstancesByVIPAddress(addr, kind, opts)
+	}
+	return scheduleInstanceUpdates(e.PollInterval, produce, await, done)
 }
 
 // ScheduleVIPAddressUpdates starts polling for updates to the set of instances registered with the
@@ -494,6 +498,50 @@ func (e *EurekaConnection) ScheduleSecureVIPAddressUpdates(addr string, await bo
 		return nil, err
 	}
 	return e.scheduleVIPAddressUpdates(addr, secure, await, done, options), nil
+}
+
+func (e *EurekaConnection) makeInstanceProducerForApp(name string, opts []InstanceQueryOption) (func() ([]*Instance, error), error) {
+	options, err := collectInstanceQueryOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	predicate := options.predicate
+	intn := options.intn
+	return func() ([]*Instance, error) {
+		app, err := e.GetApp(name)
+		if err != nil {
+			return nil, err
+		}
+		instances := app.Instances
+		if instances != nil {
+			if predicate != nil {
+				instances = filterInstances(instances, predicate)
+			}
+			if intn != nil {
+				shuffleInstances(instances, intn)
+			}
+		}
+		return instances, nil
+	}, nil
+}
+
+// ScheduleAppInstanceUpdates starts polling for updates to the set of instances from the Eureka
+// application with the given name, potentially filtered per the constraints supplied as options,
+// using the connection's configured polling interval as its period. It sends the outcome of each
+// update attempt to the returned channel, and continues until the supplied done channel is either
+// closed or has a value available. Once done sending updates to the returned channel, it closes it.
+//
+// If await is true, it sends at least one instance set update outcome to the returned channel
+// before returning.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) ScheduleAppInstanceUpdates(name string, await bool, done <-chan struct{}, opts ...InstanceQueryOption) (<-chan InstanceSetUpdate, error) {
+	produce, err := e.makeInstanceProducerForApp(name, opts)
+	if err != nil {
+		return nil, err
+	}
+	return scheduleInstanceUpdates(e.PollInterval, produce, await, done), nil
 }
 
 // An InstanceSetSource holds a periodically updated set of instances registered with Eureka.
@@ -596,27 +644,9 @@ func (e *EurekaConnection) NewInstanceSetSourceForSecureVIPAddress(addr string, 
 // It returns an error if any of the supplied options are invalid, precluding it from scheduling the
 // intended updates.
 func (e *EurekaConnection) NewInstanceSetSourceForApp(name string, await bool, opts ...InstanceQueryOption) (*InstanceSetSource, error) {
-	options, err := collectInstanceQueryOptions(opts)
+	produce, err := e.makeInstanceProducerForApp(name, opts)
 	if err != nil {
 		return nil, err
-	}
-	predicate := options.predicate
-	intn := options.intn
-	produce := func() ([]*Instance, error) {
-		app, err := e.GetApp(name)
-		if err != nil {
-			return nil, err
-		}
-		instances := app.Instances
-		if instances != nil {
-			if predicate != nil {
-				instances = filterInstances(instances, predicate)
-			}
-			if intn != nil {
-				shuffleInstances(instances, intn)
-			}
-		}
-		return instances, nil
 	}
 	return e.newInstanceSetSourceFor(produce, await), nil
 }

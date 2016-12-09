@@ -27,6 +27,29 @@ func ExampleEurekaConnection_ScheduleAppUpdates() {
 	fmt.Printf("Done monitoring application %q.\n", name)
 }
 
+func ExampleEurekaConnection_ScheduleAppInstanceUpdates() {
+	e := makeConnection()
+	done := make(chan struct{})
+	time.AfterFunc(2*time.Minute, func() {
+		close(done)
+	})
+	name := "my_app"
+	updates, err := e.ScheduleAppInstanceUpdates(name, true, done, fargo.ThatAreUp, fargo.Shuffled)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("Monitoring instances of application %q.\n", name)
+	for update := range updates {
+		if update.Err != nil {
+			fmt.Printf("Most recent request for application %q failed: %v\n", name, update.Err)
+			continue
+		}
+		fmt.Printf("Application %q has %d instances available.\n", name, len(update.Instances))
+	}
+	fmt.Printf("Done monitoring instances of application %q.\n", name)
+}
+
 func ExampleAppSource_Latest() {
 	e := makeConnection()
 	name := "my_app"
