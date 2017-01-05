@@ -40,7 +40,7 @@ type GetAppsResponse struct {
 	VersionsDelta int            `xml:"versions__delta" json:"versions__delta"`
 }
 
-// Application deserializeable from Eureka JSON.
+// GetAppResponseJson wraps an Application for deserializing from Eureka JSON.
 type GetAppResponseJson struct {
 	Application Application `json:"application"`
 }
@@ -74,22 +74,21 @@ type RegisterInstanceJson struct {
 	Instance *Instance `json:"instance"`
 }
 
-// Instance [de]serializeable [to|from] Eureka XML.
+// Instance [de]serializeable [to|from] Eureka [XML|JSON].
 type Instance struct {
-	XMLName          struct{} `xml:"instance" json:"-"`
-	HostName         string   `xml:"hostName" json:"hostName"`
-	App              string   `xml:"app" json:"app"`
-	IPAddr           string   `xml:"ipAddr" json:"ipAddr"`
-	VipAddress       string   `xml:"vipAddress" json:"vipAddress"`
-	SecureVipAddress string   `xml:"secureVipAddress" json:"secureVipAddress"`
+	HostName         string `xml:"hostName" json:"hostName"`
+	App              string `xml:"app" json:"app"`
+	IPAddr           string `xml:"ipAddr" json:"ipAddr"`
+	VipAddress       string `xml:"vipAddress" json:"vipAddress"`
+	SecureVipAddress string `xml:"secureVipAddress" json:"secureVipAddress"`
 
 	Status           StatusType `xml:"status" json:"status"`
 	Overriddenstatus StatusType `xml:"overriddenstatus" json:"overriddenstatus"`
 
-	Port        int  `xml:"port" json:"-"`
-	PortJ       Port `json:"port" xml:"-"`
-	SecurePort  int  `xml:"securePort" json:"-"`
-	SecurePortJ Port `json:"securePort" xml:"-"`
+	Port              int  `xml:"-" json:"-"`
+	PortEnabled       bool `xml:"-" json:"-"`
+	SecurePort        int  `xml:"-" json:"-"`
+	SecurePortEnabled bool `xml:"-" json:"-"`
 
 	HomePageUrl    string `xml:"homePageUrl" json:"homePageUrl"`
 	StatusPageUrl  string `xml:"statusPageUrl" json:"statusPageUrl"`
@@ -102,14 +101,6 @@ type Instance struct {
 	Metadata  InstanceMetadata `xml:"metadata" json:"metadata"`
 
 	UniqueID func(i Instance) string `xml:"-" json:"-"`
-}
-
-// Port struct used for JSON [un]marshaling only.
-// An example:
-// 	"port":{"@enabled":"true", "$":"7101"}
-type Port struct {
-	Number  string `json:"$"`
-	Enabled string `json:"@enabled"`
 }
 
 // InstanceMetadata represents the eureka metadata, which is arbitrary XML.

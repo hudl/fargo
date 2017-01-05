@@ -45,9 +45,140 @@ func TestJsonMarshal(t *testing.T) {
 	}
 }
 
+func portsEqual(actual, expected *fargo.Instance) {
+	Convey("For the insecure port", func() {
+		So(actual.Port, ShouldEqual, expected.Port)
+		So(actual.PortEnabled, ShouldEqual, expected.PortEnabled)
+
+		Convey("For the secure port", func() {
+			So(actual.SecurePort, ShouldEqual, expected.SecurePort)
+			So(actual.SecurePortEnabled, ShouldEqual, expected.SecurePortEnabled)
+		})
+	})
+}
+
+func jsonEncodedInstanceHasPortsEqualTo(b []byte, expected *fargo.Instance) {
+	Convey("And reading them back should yield the equivalent value", func() {
+		var decoded fargo.Instance
+		err := json.Unmarshal(b, &decoded)
+		So(err, ShouldBeNil)
+		portsEqual(&decoded, expected)
+	})
+}
+
+func xmlEncodedInstanceHasPortsEqualTo(b []byte, expected *fargo.Instance) {
+	Convey("And reading them back should yield the equivalent value", func() {
+		var decoded fargo.Instance
+		err := xml.Unmarshal(b, &decoded)
+		So(err, ShouldBeNil)
+		portsEqual(&decoded, expected)
+	})
+}
+
+func TestPortsMarshal(t *testing.T) {
+	Convey("Given an Instance with only the insecure port enabled", t, func() {
+		ins := fargo.Instance{
+			Port:        80,
+			PortEnabled: true,
+		}
+
+		Convey("When the ports are marshalled as JSON", func() {
+			b, err := json.Marshal(&ins)
+
+			Convey("The marshalled JSON should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `,"port":{"$":"80","@enabled":"true"}`)
+				So(s, ShouldContainSubstring, `,"securePort":{"$":"0","@enabled":"false"}`)
+
+				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+
+		Convey("When the ports are marshalled as XML", func() {
+			b, err := xml.Marshal(&ins)
+
+			Convey("The marshalled XML should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `<port enabled="true">80</port>`)
+				So(s, ShouldContainSubstring, `<securePort enabled="false">0</securePort>`)
+
+				xmlEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+	})
+	Convey("Given an Instance with only the secure port enabled", t, func() {
+		ins := fargo.Instance{
+			SecurePort:        443,
+			SecurePortEnabled: true,
+		}
+
+		Convey("When the ports are marshalled as JSON", func() {
+			b, err := json.Marshal(&ins)
+
+			Convey("The marshalled JSON should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `,"port":{"$":"0","@enabled":"false"}`)
+				So(s, ShouldContainSubstring, `,"securePort":{"$":"443","@enabled":"true"}`)
+
+				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+
+		Convey("When the ports are marshalled as XML", func() {
+			b, err := xml.Marshal(&ins)
+
+			Convey("The marshalled XML should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `<port enabled="false">0</port>`)
+				So(s, ShouldContainSubstring, `<securePort enabled="true">443</securePort>`)
+
+				xmlEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+	})
+	Convey("Given an Instance with only the both ports enabled", t, func() {
+		ins := fargo.Instance{
+			Port:              80,
+			PortEnabled:       true,
+			SecurePort:        443,
+			SecurePortEnabled: true,
+		}
+
+		Convey("When the ports are marshalled as JSON", func() {
+			b, err := json.Marshal(&ins)
+
+			Convey("The marshalled JSON should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `,"port":{"$":"80","@enabled":"true"}`)
+				So(s, ShouldContainSubstring, `,"securePort":{"$":"443","@enabled":"true"}`)
+
+				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+
+		Convey("When the ports are marshalled as XML", func() {
+			b, err := xml.Marshal(&ins)
+
+			Convey("The marshalled XML should have these values", func() {
+				So(err, ShouldBeNil)
+				s := string(b)
+				So(s, ShouldContainSubstring, `<port enabled="true">80</port>`)
+				So(s, ShouldContainSubstring, `<securePort enabled="true">443</securePort>`)
+
+				xmlEncodedInstanceHasPortsEqualTo(b, &ins)
+			})
+		})
+	})
+}
+
 func TestMetadataMarshal(t *testing.T) {
 	Convey("Given an Instance with metadata", t, func() {
-		ins := &fargo.Instance{}
+		ins := fargo.Instance{}
 		ins.SetMetadataString("key1", "value1")
 		ins.SetMetadataString("key2", "value2")
 
@@ -75,7 +206,7 @@ func TestMetadataMarshal(t *testing.T) {
 
 func TestDataCenterInfoMarshal(t *testing.T) {
 	Convey("Given an Instance situated in a data center", t, func() {
-		ins := &fargo.Instance{}
+		ins := fargo.Instance{}
 
 		Convey("When the data center name is \"Amazon\"", func() {
 			ins.DataCenterInfo.Name = fargo.Amazon

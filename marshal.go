@@ -76,22 +76,32 @@ func (a *Application) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-type instance Instance
+// jsonFormatPort describes an instance's network port, including whether its registrant considers
+// the port to be enabled or disabled.
+//
+// Example JSON encoding:
+//
+//   "port":{"@enabled":"true", "$":"7101"}
+//
+// Note that later versions of Eureka write the port number as a JSON number rather than as a
+// decimal-formatted string.
+type jsonFormatPort struct {
+	Number  string `json:"$"`
+	Enabled string `json:"@enabled"`
+}
 
-// UnmarshalJSON is a custom JSON unmarshaler for Instance to deal with the
-// different Port encodings between XML and JSON. Here we copy the values from the JSON
-// Port struct into the simple XML int field.
-func (i *Instance) UnmarshalJSON(b []byte) error {
-	var err error
-	var ii instance
-	if err = json.Unmarshal(b, &ii); err == nil {
-		marshalLog.Debug("Instance.UnmarshalJSON ii:%+v\n", ii)
-		*i = Instance(ii)
-		i.Port = parsePort(ii.PortJ.Number)
-		i.SecurePort = parsePort(ii.SecurePortJ.Number)
-		return nil
+func boolAsString(b bool) string {
+	if b {
+		return "true"
 	}
-	return err
+	return "false"
+}
+
+func makeJSONFormatPort(port int, enabled bool) jsonFormatPort {
+	return jsonFormatPort{
+		strconv.Itoa(port),
+		boolAsString(enabled),
+	}
 }
 
 func parsePort(s string) int {
@@ -100,6 +110,100 @@ func parsePort(s string) int {
 		log.Warningf("Invalid port error: %s", err.Error())
 	}
 	return n
+}
+
+func stringAsBool(s string) bool {
+	return s == "true"
+}
+
+// UnmarshalJSON is a custom JSON unmarshaler for Instance, transcribing the two composite port
+// specifications up to top-level fields.
+func (i *Instance) UnmarshalJSON(b []byte) error {
+	type instance Instance
+	aux := struct {
+		*instance
+		Port       jsonFormatPort `json:"port"`
+		SecurePort jsonFormatPort `json:"securePort"`
+	}{
+		instance: (*instance)(i),
+	}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	i.Port = parsePort(aux.Port.Number)
+	i.PortEnabled = stringAsBool(aux.Port.Enabled)
+	i.SecurePort = parsePort(aux.SecurePort.Number)
+	i.SecurePortEnabled = stringAsBool(aux.SecurePort.Enabled)
+	return nil
+}
+
+// MarshalJSON is a custom JSON marshaler for Instance, adapting the top-level raw port values to
+// the composite port specifications.
+func (i *Instance) MarshalJSON() ([]byte, error) {
+	type instance Instance
+	aux := struct {
+		*instance
+		Port       jsonFormatPort `json:"port"`
+		SecurePort jsonFormatPort `json:"securePort"`
+	}{
+		(*instance)(i),
+		makeJSONFormatPort(i.Port, i.PortEnabled),
+		makeJSONFormatPort(i.SecurePort, i.SecurePortEnabled),
+	}
+	return json.Marshal(&aux)
+}
+
+// xmlFormatPort describes an instance's network port, including whether its registrant considers
+// the port to be enabled or disabled.
+//
+// Example XML encoding:
+//
+//     <port enabled="true">7101</port>
+type xmlFormatPort struct {
+	Number  int  `xml:",chardata"`
+	Enabled bool `xml:"enabled,attr"`
+}
+
+// UnmarshalXML is a custom XML unmarshaler for Instance, transcribing the two composite port
+// specifications up to top-level fields.
+func (i *Instance) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	type instance Instance
+	aux := struct {
+		*instance
+		Port       xmlFormatPort `xml:"port"`
+		SecurePort xmlFormatPort `xml:"securePort"`
+	}{
+		instance: (*instance)(i),
+	}
+	if err := d.DecodeElement(&aux, &start); err != nil {
+		return err
+	}
+	i.Port = aux.Port.Number
+	i.PortEnabled = aux.Port.Enabled
+	i.SecurePort = aux.SecurePort.Number
+	i.SecurePortEnabled = aux.SecurePort.Enabled
+	return nil
+}
+
+// startLocalName creates a start-tag of an XML element with the given local name and no namespace name.
+func startLocalName(local string) xml.StartElement {
+	return xml.StartElement{Name: xml.Name{Space: "", Local: local}}
+}
+
+// MarshalXML is a custom XML marshaler for Instance, adapting the top-level raw port values to
+// the composite port specifications.
+func (i *Instance) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	type instance Instance
+	aux := struct {
+		*instance
+		Port       xmlFormatPort `xml:"port"`
+		SecurePort xmlFormatPort `xml:"securePort"`
+	}{
+		instance:   (*instance)(i),
+		Port:       xmlFormatPort{i.Port, i.PortEnabled},
+		SecurePort: xmlFormatPort{i.SecurePort, i.SecurePortEnabled},
+	}
+	return e.EncodeElement(&aux, startLocalName("instance"))
 }
 
 // UnmarshalJSON is a custom JSON unmarshaler for InstanceMetadata to handle squirreling away
@@ -121,11 +225,6 @@ func (i *InstanceMetadata) MarshalJSON() ([]byte, error) {
 	}
 
 	return i.Raw, nil
-}
-
-// startLocalName creates a start-tag of an XML element with the given local name and no namespace name.
-func startLocalName(local string) xml.StartElement {
-	return xml.StartElement{Name: xml.Name{Space: "", Local: local}}
 }
 
 // MarshalXML is a custom XML marshaler for InstanceMetadata.
