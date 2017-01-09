@@ -3,6 +3,7 @@ package fargo_test
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -58,7 +59,7 @@ func portsEqual(actual, expected *fargo.Instance) {
 }
 
 func jsonEncodedInstanceHasPortsEqualTo(b []byte, expected *fargo.Instance) {
-	Convey("And reading them back should yield the equivalent value", func() {
+	Convey("Reading them back should yield the equivalent value", func() {
 		var decoded fargo.Instance
 		err := json.Unmarshal(b, &decoded)
 		So(err, ShouldBeNil)
@@ -92,6 +93,10 @@ func TestPortsMarshal(t *testing.T) {
 				So(s, ShouldContainSubstring, `,"securePort":{"$":"0","@enabled":"false"}`)
 
 				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+
+				Convey("When the Eureka server is version 1.22 or later", func() {
+					jsonEncodedInstanceHasPortsEqualTo(bytes.Replace(b, []byte(`"80"`), []byte("80"), -1), &ins)
+				})
 			})
 		})
 
@@ -124,6 +129,10 @@ func TestPortsMarshal(t *testing.T) {
 				So(s, ShouldContainSubstring, `,"securePort":{"$":"443","@enabled":"true"}`)
 
 				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+
+				Convey("When the Eureka server is version 1.22 or later", func() {
+					jsonEncodedInstanceHasPortsEqualTo(bytes.Replace(b, []byte(`"443"`), []byte("443"), -1), &ins)
+				})
 			})
 		})
 
@@ -158,6 +167,12 @@ func TestPortsMarshal(t *testing.T) {
 				So(s, ShouldContainSubstring, `,"securePort":{"$":"443","@enabled":"true"}`)
 
 				jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+
+				Convey("When the Eureka server is version 1.22 or later", func() {
+					b = bytes.Replace(b, []byte(`"80"`), []byte("80"), -1)
+					b = bytes.Replace(b, []byte(`"443"`), []byte("443"), -1)
+					jsonEncodedInstanceHasPortsEqualTo(b, &ins)
+				})
 			})
 		})
 

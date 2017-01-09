@@ -218,6 +218,7 @@ func TestRegistration(t *testing.T) {
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
+		PortEnabled:      true,
 		App:              "TESTAPP",
 		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
@@ -231,6 +232,7 @@ func TestRegistration(t *testing.T) {
 			j := fargo.Instance{
 				HostName:         "i-6543",
 				Port:             9090,
+				PortEnabled:      true,
 				App:              "TESTAPP",
 				IPAddr:           "127.0.0.10",
 				VipAddress:       "127.0.0.10",
@@ -264,6 +266,7 @@ func TestReregistration(t *testing.T) {
 		i := fargo.Instance{
 			HostName:         "i-123456",
 			Port:             9090,
+			PortEnabled:      true,
 			App:              "TESTAPP",
 			IPAddr:           "127.0.0.10",
 			VipAddress:       "127.0.0.10",
@@ -305,6 +308,7 @@ func DontTestDeregistration(t *testing.T) {
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
+		PortEnabled:      true,
 		App:              "TESTAPP",
 		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
