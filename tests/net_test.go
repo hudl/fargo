@@ -92,7 +92,9 @@ func TestConnectionCreation(t *testing.T) {
 		e := fargo.NewConnFromConfig(cfg)
 		apps, err := e.GetApps()
 		So(err, ShouldBeNil)
-		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
+		app := apps["EUREKA"]
+		So(app, ShouldNotBeNil)
+		So(len(app.Instances), ShouldEqual, 2)
 	})
 }
 
@@ -101,15 +103,18 @@ func TestGetApps(t *testing.T) {
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Pull applications", t, func() {
-			a, err := e.GetApps()
+			apps, err := e.GetApps()
 			So(err, ShouldBeNil)
-			So(len(a["EUREKA"].Instances), ShouldEqual, 2)
+			app := apps["EUREKA"]
+			So(app, ShouldNotBeNil)
+			So(len(app.Instances), ShouldEqual, 2)
 		})
 		Convey("Pull single application", t, func() {
-			a, err := e.GetApp("EUREKA")
+			app, err := e.GetApp("EUREKA")
 			So(err, ShouldBeNil)
-			So(len(a.Instances), ShouldEqual, 2)
-			for _, ins := range a.Instances {
+			So(app, ShouldNotBeNil)
+			So(len(app.Instances), ShouldEqual, 2)
+			for _, ins := range app.Instances {
 				So(ins.IPAddr, ShouldBeIn, []string{"172.17.0.2", "172.17.0.3"})
 			}
 		})
@@ -165,7 +170,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 						So(instances, ShouldHaveLength, 1)
 						Convey("And selecting instances with status UP should provide none", func() {
 							// Ensure that we tolerate a nil option safely.
-							instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp, nil)
+							instances, err := e.GetInstancesByVIPAddress(vipAddress, false, fargo.ThatAreUp, nil)
 							So(err, ShouldBeNil)
 							So(instances, ShouldBeEmpty)
 						})
@@ -199,7 +204,7 @@ func TestGetMultipleInstancesByVIPAddress(t *testing.T) {
 				Convey("requesting the instances by that VIP address should provide them", func() {
 					time.Sleep(cacheDelay)
 					vipAddress := "app"
-					instances, err := e.GetInstancesByVIPAddress(vipAddress)
+					instances, err := e.GetInstancesByVIPAddress(vipAddress, false)
 					So(err, ShouldBeNil)
 					So(instances, ShouldHaveLength, 2)
 					for _, ins := range instances {
