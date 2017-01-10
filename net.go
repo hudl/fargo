@@ -661,6 +661,9 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	} else {
 		out, err = e.marshal(ins)
 	}
+	if err != nil {
+		return err
+	}
 
 	body, rcode, err := postBody(reqURL, out, e.UseJson)
 	if err != nil {

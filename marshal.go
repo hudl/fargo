@@ -320,7 +320,7 @@ func (m metadataMap) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 	return nil
 }
 
-func metadataValue(i DataCenterInfo) interface{} {
+func metadataValue(i *DataCenterInfo) interface{} {
 	if i.Name == Amazon {
 		return i.Metadata
 	}
@@ -334,7 +334,7 @@ var (
 
 // MarshalXML is a custom XML marshaler for DataCenterInfo, writing either Metadata or AlternateMetadata
 // depending on the type of data center indicated by the Name.
-func (i DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (i *DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if err := e.EncodeToken(start); err != nil {
 		return err
 	}
@@ -351,6 +351,7 @@ func (i DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) error
 
 type preliminaryDataCenterInfo struct {
 	Name     string      `xml:"name" json:"name"`
+	Class    string      `xml:"-" json:"@class"`
 	Metadata metadataMap `xml:"metadata" json:"metadata"`
 }
 
@@ -378,6 +379,7 @@ func populateAmazonMetadata(dst *AmazonMetadataType, src map[string]string) {
 
 func adaptDataCenterInfo(dst *DataCenterInfo, src preliminaryDataCenterInfo) {
 	dst.Name = src.Name
+	dst.Class = src.Class
 	if src.Name == Amazon {
 		populateAmazonMetadata(&dst.Metadata, src.Metadata)
 	} else {
@@ -400,20 +402,31 @@ func (i *DataCenterInfo) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 
 // MarshalJSON is a custom JSON marshaler for DataCenterInfo, writing either Metadata or AlternateMetadata
 // depending on the type of data center indicated by the Name.
-func (i DataCenterInfo) MarshalJSON() ([]byte, error) {
+func (i *DataCenterInfo) MarshalJSON() ([]byte, error) {
 	type named struct {
-		Name string `json:"name"`
+		Name  string `json:"name"`
+		Class string `json:"@class"`
 	}
 	if i.Name == Amazon {
 		return json.Marshal(struct {
 			named
 			Metadata AmazonMetadataType `json:"metadata"`
-		}{named{i.Name}, i.Metadata})
+		}{
+			named{i.Name, "com.netflix.appinfo.AmazonInfo"},
+			i.Metadata,
+		})
+	}
+	class := "com.netflix.appinfo.MyDataCenterInfo"
+	if i.Name != MyOwn {
+		class = i.Class
 	}
 	return json.Marshal(struct {
 		named
-		Metadata map[string]string `json:"metadata"`
-	}{named{i.Name}, i.AlternateMetadata})
+		Metadata map[string]string `json:"metadata,omitempty"`
+	}{
+		named{i.Name, class},
+		i.AlternateMetadata,
+	})
 }
 
 // UnmarshalJSON is a custom JSON unmarshaler for DataCenterInfo, populating either Metadata or AlternateMetadata

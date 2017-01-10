@@ -279,25 +279,25 @@ func TestReregistration(t *testing.T) {
 			Convey("Instance registers correctly", func() {
 				err := e.RegisterInstance(&i)
 				So(err, ShouldBeNil)
-			})
-		})
 
-		Convey("Reregister the TESTAPP instance", t, func() {
-			Convey("Instance reregisters correctly", func() {
-				err := e.ReregisterInstance(&i)
-				So(err, ShouldBeNil)
-			})
+				Convey("Reregister the TESTAPP instance", func() {
+					Convey("Instance reregisters correctly", func() {
+						err := e.ReregisterInstance(&i)
+						So(err, ShouldBeNil)
 
-			Convey("Instance can check in", func() {
-				err := e.HeartBeatInstance(&i)
-				So(err, ShouldBeNil)
-			})
+						Convey("Instance can check in", func() {
+							err := e.HeartBeatInstance(&i)
+							So(err, ShouldBeNil)
+						})
 
-			Convey("Instance can be gotten correctly", func() {
-				ii, err := e.GetInstance(i.App, i.HostName)
-				So(err, ShouldBeNil)
-				So(ii.App, ShouldEqual, i.App)
-				So(ii.HostName, ShouldEqual, i.HostName)
+						Convey("Instance can be gotten correctly", func() {
+							ii, err := e.GetInstance(i.App, i.HostName)
+							So(err, ShouldBeNil)
+							So(ii.App, ShouldEqual, i.App)
+							So(ii.HostName, ShouldEqual, i.HostName)
+						})
+					})
+				})
 			})
 		})
 	}
@@ -370,6 +370,17 @@ func TestUpdateStatus(t *testing.T) {
 
 func TestMetadataReading(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		PortEnabled:      true,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Read empty instance metadata", t, func() {
@@ -379,19 +390,23 @@ func TestMetadataReading(t *testing.T) {
 			_, err = i.Metadata.GetString("SomeProp")
 			So(err, ShouldBeNil)
 		})
-		Convey("Read valid instance metadata", t, func() {
-			a, err := e.GetApp("TESTAPP")
-			So(err, ShouldBeNil)
-			So(len(a.Instances), ShouldBeGreaterThan, 0)
-			if len(a.Instances) == 0 {
-				return
-			}
-			i := a.Instances[0]
-			err = e.AddMetadataString(i, "SomeProp", "AValue")
-			So(err, ShouldBeNil)
-			v, err := i.Metadata.GetString("SomeProp")
-			So(err, ShouldBeNil)
-			So(v, ShouldEqual, "AValue")
+		Convey("Register an instance to TESTAPP", t, func() {
+			Convey("Instance registers correctly", func() {
+				err := e.RegisterInstance(&i)
+				So(err, ShouldBeNil)
+
+				Convey("Read valid instance metadata", func() {
+					a, err := e.GetApp("TESTAPP")
+					So(err, ShouldBeNil)
+					So(len(a.Instances), ShouldBeGreaterThan, 0)
+					i := a.Instances[0]
+					err = e.AddMetadataString(i, "SomeProp", "AValue")
+					So(err, ShouldBeNil)
+					v, err := i.Metadata.GetString("SomeProp")
+					So(err, ShouldBeNil)
+					So(v, ShouldEqual, "AValue")
+				})
+			})
 		})
 	}
 }

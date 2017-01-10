@@ -225,6 +225,7 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 
 		Convey("When the data center name is \"Amazon\"", func() {
 			ins.DataCenterInfo.Name = fargo.Amazon
+			ins.DataCenterInfo.Class = "ignored"
 			ins.DataCenterInfo.Metadata.InstanceID = "123"
 			ins.DataCenterInfo.Metadata.HostName = "expected.local"
 
@@ -233,14 +234,16 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 
 				Convey("The marshalled JSON should have these values", func() {
 					So(err, ShouldBeNil)
-					So(string(b), ShouldEqual, `{"name":"Amazon","metadata":{"ami-launch-index":"","local-hostname":"","availability-zone":"","instance-id":"123","public-ipv4":"","public-hostname":"","ami-manifest-path":"","local-ipv4":"","hostname":"expected.local","ami-id":"","instance-type":""}}`)
+					So(string(b), ShouldEqual, `{"name":"Amazon","@class":"com.netflix.appinfo.AmazonInfo","metadata":{"ami-launch-index":"","local-hostname":"","availability-zone":"","instance-id":"123","public-ipv4":"","public-hostname":"","ami-manifest-path":"","local-ipv4":"","hostname":"expected.local","ami-id":"","instance-type":""}}`)
 
 					Convey("The value unmarshalled from JSON should have the same values as the original", func() {
 						d := fargo.DataCenterInfo{}
 						err := json.Unmarshal(b, &d)
 
 						So(err, ShouldBeNil)
-						So(d, ShouldResemble, ins.DataCenterInfo)
+						expected := ins.DataCenterInfo
+						expected.Class = "com.netflix.appinfo.AmazonInfo"
+						So(d, ShouldResemble, expected)
 					})
 				})
 			})
@@ -257,7 +260,9 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 						err := xml.Unmarshal(b, &d)
 
 						So(err, ShouldBeNil)
-						So(d, ShouldResemble, ins.DataCenterInfo)
+						expected := ins.DataCenterInfo
+						expected.Class = ""
+						So(d, ShouldResemble, expected)
 					})
 				})
 			})
@@ -265,17 +270,39 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 
 		Convey("When the data center name is not \"Amazon\"", func() {
 			ins.DataCenterInfo.Name = fargo.MyOwn
+			ins.DataCenterInfo.Class = "ignored"
 			ins.DataCenterInfo.AlternateMetadata = map[string]string{
 				"instanceId": "123",
 				"hostName":   "expected.local",
 			}
 
-			Convey("When the data center info is marshalled as JSON", func() {
+			Convey("When the data center info has no class specified and is marshalled as JSON", func() {
 				b, err := json.Marshal(&ins.DataCenterInfo)
 
 				Convey("The marshalled JSON should have these values", func() {
 					So(err, ShouldBeNil)
-					So(string(b), ShouldEqual, `{"name":"MyOwn","metadata":{"hostName":"expected.local","instanceId":"123"}}`)
+					So(string(b), ShouldEqual, `{"name":"MyOwn","@class":"com.netflix.appinfo.MyDataCenterInfo","metadata":{"hostName":"expected.local","instanceId":"123"}}`)
+
+					Convey("The value unmarshalled from JSON should have the same values as the original", func() {
+						d := fargo.DataCenterInfo{}
+						err := json.Unmarshal(b, &d)
+
+						So(err, ShouldBeNil)
+						expected := ins.DataCenterInfo
+						expected.Class = "com.netflix.appinfo.MyDataCenterInfo"
+						So(d, ShouldResemble, expected)
+					})
+				})
+			})
+
+			Convey("When the data center info has both a custom name and class specified and is marshalled as JSON", func() {
+				ins.DataCenterInfo.Name = "Custom"
+				ins.DataCenterInfo.Class = "custom"
+				b, err := json.Marshal(&ins.DataCenterInfo)
+
+				Convey("The marshalled JSON should have these values", func() {
+					So(err, ShouldBeNil)
+					So(string(b), ShouldEqual, `{"name":"Custom","@class":"custom","metadata":{"hostName":"expected.local","instanceId":"123"}}`)
 
 					Convey("The value unmarshalled from JSON should have the same values as the original", func() {
 						d := fargo.DataCenterInfo{}
@@ -301,7 +328,9 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 						err := xml.Unmarshal(b, &d)
 
 						So(err, ShouldBeNil)
-						So(d, ShouldResemble, ins.DataCenterInfo)
+						expected := ins.DataCenterInfo
+						expected.Class = ""
+						So(d, ShouldResemble, expected)
 					})
 				})
 			})

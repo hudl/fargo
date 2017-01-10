@@ -132,6 +132,14 @@ type AmazonMetadataType struct {
 type DataCenterInfo struct {
 	// Name indicates which type of data center hosts this instance.
 	Name string
+	// Class indicates the Java class name representing this structure in the Eureka server,
+	// noted only when encoding communication with JSON.
+	//
+	// When registering an instance, if the name is neither "Amazon" nor "MyOwn", this field's
+	// value is used. Otherwise, a suitable default value will be supplied to the server. This field
+	// is available for specifying custom data center types other than the two built-in ones, for
+	// which no suitable default value could be known.
+	Class string
 	// Metadata provides details specific to an Amazon data center,
 	// populated and honored when the Name field's value is "Amazon".
 	Metadata AmazonMetadataType
