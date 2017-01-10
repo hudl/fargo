@@ -377,7 +377,7 @@ func populateAmazonMetadata(dst *AmazonMetadataType, src map[string]string) {
 	bindValue(&dst.InstanceType, src, "instance-type")
 }
 
-func adaptDataCenterInfo(dst *DataCenterInfo, src preliminaryDataCenterInfo) {
+func adaptDataCenterInfo(dst *DataCenterInfo, src *preliminaryDataCenterInfo) {
 	dst.Name = src.Name
 	dst.Class = src.Class
 	if src.Name == Amazon {
@@ -396,7 +396,7 @@ func (i *DataCenterInfo) UnmarshalXML(d *xml.Decoder, start xml.StartElement) er
 	if err := d.DecodeElement(&p, &start); err != nil {
 		return err
 	}
-	adaptDataCenterInfo(i, p)
+	adaptDataCenterInfo(i, &p)
 	return nil
 }
 
@@ -429,15 +429,43 @@ func (i *DataCenterInfo) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func jsonValueAsString(i interface{}) string {
+	switch v := i.(type) {
+	case string:
+		return v
+	case float64:
+		return fmt.Sprintf("%.f", v)
+	case bool:
+		return strconv.FormatBool(v)
+	case []interface{}, map[string]interface{}:
+		// Don't bother trying to decode these.
+		return ""
+	case nil:
+		return ""
+	default:
+		panic("type of unexpected value")
+	}
+}
+
 // UnmarshalJSON is a custom JSON unmarshaler for DataCenterInfo, populating either Metadata or AlternateMetadata
 // depending on the type of data center indicated by the Name.
 func (i *DataCenterInfo) UnmarshalJSON(b []byte) error {
-	p := preliminaryDataCenterInfo{
-		Metadata: make(map[string]string, 11),
+	// The Eureka server will mistakenly convert metadata values that look like numbers to JSON numbers.
+	// Convert them back to strings.
+	aux := struct {
+		*preliminaryDataCenterInfo
+		PreliminaryMetadata map[string]interface{} `json:"metadata"`
+	}{
+		PreliminaryMetadata: make(map[string]interface{}, 11),
 	}
-	if err := json.Unmarshal(b, &p); err != nil {
+	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
-	adaptDataCenterInfo(i, p)
+	metadata := make(map[string]string, len(aux.PreliminaryMetadata))
+	for k, v := range aux.PreliminaryMetadata {
+		metadata[k] = jsonValueAsString(v)
+	}
+	aux.Metadata = metadata
+	adaptDataCenterInfo(i, aux.preliminaryDataCenterInfo)
 	return nil
 }

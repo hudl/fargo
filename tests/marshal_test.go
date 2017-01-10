@@ -310,6 +310,16 @@ func TestDataCenterInfoMarshal(t *testing.T) {
 
 						So(err, ShouldBeNil)
 						So(d, ShouldResemble, ins.DataCenterInfo)
+
+						Convey("Even if the server translates strings to other types", func() {
+							translated := bytes.Replace(b, []byte(`"123"`), []byte("123"), 1)
+
+							d := fargo.DataCenterInfo{}
+							err := json.Unmarshal(translated, &d)
+
+							So(err, ShouldBeNil)
+							So(d, ShouldResemble, ins.DataCenterInfo)
+						})
 					})
 				})
 			})
