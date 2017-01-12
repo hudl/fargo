@@ -213,3 +213,115 @@ func TestFilterInstancesInApps(t *testing.T) {
 		})
 	})
 }
+// Preclude compiler optimization eliding the filter procedure.
+var filterBenchmarkResult []*Instance
+
+type filterInstancesFunc func([]*Instance, func(*Instance) bool) []*Instance
+
+func benchmarkFilterInstancesFunc(b *testing.B, f filterInstancesFunc) {
+	retainAll := func(*Instance) bool { return true }
+	dropAll := func(*Instance) bool { return false }
+	thatAreUp := func(instance *Instance) bool { return instance.Status == UP }
+
+	type runLengthByStatus struct {
+		Up, Down, Starting, OutOfService, Unknown int
+	}
+	synthesizeInstances := func(rls ...runLengthByStatus) []*Instance {
+		var instances []*Instance
+		push := func(status StatusType, n int) {
+			if n <= 0 {
+				return
+			}
+			instance := &Instance{Status: status}
+			for i := 0; ; {
+				instances = append(instances, instance)
+				i++
+				if i == n {
+					break
+				}
+			}
+		}
+		for _, rl := range rls {
+			push(UP, rl.Up)
+			push(DOWN, rl.Down)
+			push(STARTING, rl.Starting)
+			push(OUTOFSERVICE, rl.OutOfService)
+			push(UNKNOWN, rl.OutOfService)
+		}
+		return instances
+	}
+	filter := func(n int, f filterInstancesFunc, instances []*Instance, pred func(*Instance) bool) {
+		var result []*Instance
+		for i := 0; i != n; i++ {
+			result = f(instances, pred)
+		}
+		filterBenchmarkResult = result
+	}
+	benchAllNoneAndUp := func(b *testing.B, instances []*Instance) {
+		b.Run("all", func(b *testing.B) {
+			filter(b.N, f, instances, retainAll)
+		})
+		b.Run("none", func(b *testing.B) {
+			filter(b.N, f, instances, dropAll)
+		})
+		b.Run("up", func(b *testing.B) {
+			filter(b.N, f, instances, thatAreUp)
+		})
+	}
+
+	b.Run("1↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1}))
+	})
+	b.Run("10↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 10}))
+	})
+	b.Run("100↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 100}))
+	})
+	b.Run("1000↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1000}))
+	})
+	b.Run("1↑1↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1, Down: 1}))
+	})
+	b.Run("1↑9↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1, Down: 9}))
+	})
+	b.Run("1↑99↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1, Down: 99}))
+	})
+	b.Run("1↑999↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 1, Down: 999}))
+	})
+	b.Run("9↑1↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 9, Down: 1}))
+	})
+	b.Run("99↑1↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 99, Down: 1}))
+	})
+	b.Run("999↑1↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 999, Down: 1}))
+	})
+	b.Run("3↓4↑3↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Down: 3}, runLengthByStatus{Up: 4, Down: 3}))
+	})
+	b.Run("3↑4↓3↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 3, Down: 4}, runLengthByStatus{Up: 3}))
+	})
+	b.Run("33↓34↑33↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Down: 33}, runLengthByStatus{Up: 34, Down: 33}))
+	})
+	b.Run("33↑34↓33↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 33, Down: 34}, runLengthByStatus{Up: 33}))
+	})
+	b.Run("333↓334↑333↓", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Down: 333}, runLengthByStatus{Up: 334, Down: 333}))
+	})
+	b.Run("333↑334↓333↑", func(b *testing.B) {
+		benchAllNoneAndUp(b, synthesizeInstances(runLengthByStatus{Up: 333, Down: 334}, runLengthByStatus{Up: 333}))
+	})
+}
+
+func BenchmarkFilterInstances(b *testing.B) {
+	benchmarkFilterInstancesFunc(b, filterInstances)
+}
