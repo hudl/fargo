@@ -18,7 +18,7 @@ func ExampleEurekaConnection_ScheduleVIPAddressUpdates_manual() {
 	})
 	vipAddress := "my_vip"
 	// We only care about those instances that are available to receive requests.
-	updates, err := e.ScheduleVIPAddressUpdates(vipAddress, true, done, fargo.ThatAreUp, fargo.Shuffled)
+	updates, err := e.ScheduleVIPAddressUpdates(vipAddress, false, true, done, fargo.ThatAreUp, fargo.Shuffled)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -40,7 +40,7 @@ func ExampleEurekaConnection_ScheduleVIPAddressUpdates_context() {
 	defer cancel()
 	vipAddress := "my_vip"
 	// Look for instances that are in trouble.
-	updates, err := e.ScheduleVIPAddressUpdates(vipAddress, true, ctx.Done(), fargo.WithStatus(fargo.DOWN), fargo.WithStatus(fargo.OUTOFSERVICE))
+	updates, err := e.ScheduleVIPAddressUpdates(vipAddress, false, true, ctx.Done(), fargo.WithStatus(fargo.DOWN), fargo.WithStatus(fargo.OUTOFSERVICE))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -61,7 +61,7 @@ func ExampleEurekaConnection_ScheduleSecureVIPAddressUpdates_context() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	svipAddress := "my_vip"
-	updates, err := e.ScheduleSecureVIPAddressUpdates(svipAddress, true, ctx.Done(), fargo.ThatAreUp)
+	updates, err := e.ScheduleVIPAddressUpdates(svipAddress, true, true, ctx.Done(), fargo.ThatAreUp)
 	if err != nil {
 		fmt.Println(err)
 		return
