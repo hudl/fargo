@@ -216,6 +216,65 @@ func shuffleInstances(instances []*Instance, intn func(int) int) {
 	}
 }
 
+// filterInstances returns a filtered subset of the supplied sequence of instances, retaining only those
+// instances for which the supplied predicate function returns true. It returns the retained instances in
+// the same order the occurred in the input sequence. Note that the returned slice may share storage with
+// the input sequence.
+//
+// The filtering algorithm is arguably baroque, in the interest of efficiency: namely, eliminating
+// allocation and copying when we can avoid it. We only need to allocate and copy elements of the
+// input sequence when the result sequence contains at least two nonadjacent subsequences of the
+// input sequence. That is, if the predicate is, say, retaining only instances with status "UP", we
+// can avoid copying elements and instead return a subsequence of the input sequence in the
+// following cases (where "U" indicates an instance with status "UP", "d" with status "DOWN"):
+//
+//   ∙ No instances are "UP"
+//     |dddd|
+//
+//   ∙ A single contiguous run of instances are "UP", preceded or followed by a possibly empty contiguous
+//     sequence of instances that are not "UP"
+//
+//     |UUUU|
+//     |ddUU|
+//     |UUdd|
+//     |dUUd|
+//
+// Conversely, in the following cases, no contiguous subsequence of the input sequence captures the
+// set of "UP" instances:
+//
+//   ∙ Two or more contiguous runs of instances that are "UP" are interrupted by runs of instances
+//     that are not "UP"
+//
+//     |UUdU|
+//     |UddU|
+//
+// There, it's necessary to copy the "UP" instances to a fresh sequence in order to collapse them
+// over the intervening "DOWN" instances.
+//
+// A high-level sketch of the algorithm:
+//
+//   Find a subsequence to retain, then try to find a second one.
+//   If there is a second one, switch to copying elements to a fresh sequence to retain them.
+//   Otherwise, return the lone retained subsequence, if any.
+//
+// In more detail:
+//
+//   Find the first element of the sequence to retain.
+//   If there are none, return an empty sequence.
+//   Otherwise
+//     Note the first dropped sequence as range [0,firstBegin).
+//     Find the next element to drop, looking for the end of the first subsequence to retain.
+//     If there are none, the retained sequence runs through the end; return the subsequence [firstBegin,end).
+//     Otherwise
+//       Note the first retained sequence as range [firstBegin,firstEnd).
+//       Note the second dropped sequence as range [firstEnd,secondBegin).
+//       Allocate a fresh array to collect the two or more retained sequences we've found.
+//       Copy the first retained sequence into the array.
+//       Copy the first element at the start of second retained sequence into the array.
+//       Continue collecting any remaining retained elements into the array.
+//       Return the populated subsequence of the array.
+//
+// The algorithm evaluates the predicate exactly once for each element of the input sequence.
 func filterInstances(instances []*Instance, pred func(*Instance) bool) []*Instance {
 	for firstBegin, instance := range instances {
 		if !pred(instance) {
