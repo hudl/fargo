@@ -149,7 +149,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 			So(instances, ShouldHaveLength, 1)
 			So(instances[0].VipAddress, ShouldEqual, vipAddress)
 			Convey("requesting the instances by that VIP address with status UP should provide that one", func() {
-				instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp())
+				instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp)
 				So(err, ShouldBeNil)
 				So(instances, ShouldHaveLength, 1)
 				So(instances[0].VipAddress, ShouldEqual, vipAddress)
@@ -165,7 +165,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 						So(instances, ShouldHaveLength, 1)
 						Convey("And selecting instances with status UP should provide none", func() {
 							// Ensure that we tolerate a nil option safely.
-							instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp(), nil)
+							instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp, nil)
 							So(err, ShouldBeNil)
 							So(instances, ShouldBeEmpty)
 						})

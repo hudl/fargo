@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (e *EurekaConnection) generateURL(slugs ...string) string {
@@ -168,28 +169,20 @@ func WithStatus(status StatusType) InstanceQueryOption {
 	}
 }
 
-func makeUncheckedStatusMatchingOption(status StatusType) InstanceQueryOption {
-	return func(o *instanceQueryOptions) error {
-		retainIfStatusIs(status, o)
-		return nil
-	}
-}
-
 // ThatAreUp restricts the set of instances returned to only those with status UP.
 //
-// Combining the options produced by this function with those produced by WithStatus applies their
-// logical disjunction.
-func ThatAreUp() InstanceQueryOption {
-	return makeUncheckedStatusMatchingOption(UP)
+// Combining this function with the options produced by WithStatus applies their logical
+// disjunction.
+func ThatAreUp(o *instanceQueryOptions) error {
+	retainIfStatusIs(UP, o)
+	return nil
 }
 
 // Shuffled requests randomizing the order of the sequence of instances returned, using the default
 // shared rand.Source.
-func Shuffled() InstanceQueryOption {
-	return func(o *instanceQueryOptions) error {
-		o.intn = rand.Intn
-		return nil
-	}
+func Shuffled(o *instanceQueryOptions) error {
+	o.intn = rand.Intn
+	return nil
 }
 
 // ShuffledWith requests randomizing the order of the sequence of instances returned, using the
@@ -374,20 +367,31 @@ func (e *EurekaConnection) getInstancesByVIPAddress(addr string, opts instanceQu
 	return instances, nil
 }
 
+func mergeInstanceQueryOptions(defaults instanceQueryOptions, opts []InstanceQueryOption) (instanceQueryOptions, error) {
+	for _, o := range opts {
+		if o != nil {
+			if err := o(&defaults); err != nil {
+				return instanceQueryOptions{}, err
+			}
+		}
+	}
+	return defaults, nil
+}
+
+func collectInstanceQueryOptions(opts []InstanceQueryOption) (instanceQueryOptions, error) {
+	return mergeInstanceQueryOptions(instanceQueryOptions{}, opts)
+}
+
 // GetInstancesByVIPAddress returns the set of instances registered with the given VIP address,
 // potentially filtered per the constraints supplied as options.
 //
 // NB: The VIP address is case-sensitive, and must match the address used at registration time.
 func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, opts ...InstanceQueryOption) ([]*Instance, error) {
-	var mergedOptions instanceQueryOptions
-	for _, o := range opts {
-		if o != nil {
-			if err := o(&mergedOptions); err != nil {
-				return nil, err
-			}
-		}
+	options, err := collectInstanceQueryOptions(opts)
+	if err != nil {
+		return nil, err
 	}
-	return e.getInstancesByVIPAddress(addr, mergedOptions)
+	return e.getInstancesByVIPAddress(addr, options)
 }
 
 // GetInstancesBySecureVIPAddress returns the set of instances registered with the given secure
@@ -395,15 +399,89 @@ func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, opts ...Instanc
 //
 // NB: The secure VIP address is case-sensitive, and must match the address used at registration time.
 func (e *EurekaConnection) GetInstancesBySecureVIPAddress(addr string, opts ...InstanceQueryOption) ([]*Instance, error) {
-	mergedOptions := instanceQueryOptions{secure: true}
-	for _, o := range opts {
-		if o != nil {
-			if err := o(&mergedOptions); err != nil {
-				return nil, err
+	options, err := mergeInstanceQueryOptions(instanceQueryOptions{secure: true}, opts)
+	if err != nil {
+		return nil, err
+	}
+	return e.getInstancesByVIPAddress(addr, options)
+}
+
+// InstanceSetUpdate is the outcome of an attempt to get a fresh snapshot of a Eureka VIP address's
+// set of instances, together with an error that may have occurred in that attempt. If the Err field
+// is nil, the Instances field will be populated—though possibly with an empty set.
+type InstanceSetUpdate struct {
+	Instances []*Instance
+	Err       error
+}
+
+func sendVIPAddressUpdatesEvery(d time.Duration, produce func() InstanceSetUpdate, c chan<- InstanceSetUpdate, done <-chan struct{}) {
+	t := time.NewTicker(d)
+	defer t.Stop()
+	for {
+		select {
+		case <-done:
+			close(c)
+			return
+		case <-t.C:
+			// Drop attempted sends when the consumer hasn't received the last buffered update.
+			select {
+			case c <- produce():
+			default:
 			}
 		}
 	}
-	return e.getInstancesByVIPAddress(addr, mergedOptions)
+}
+
+func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
+	produce := func() InstanceSetUpdate {
+		instances, err := e.getInstancesByVIPAddress(addr, opts)
+		return InstanceSetUpdate{instances, err}
+	}
+	c := make(chan InstanceSetUpdate, 1)
+	if await {
+		c <- produce()
+	}
+	go sendVIPAddressUpdatesEvery(time.Duration(e.PollInterval)*time.Second, produce, c, done)
+	return c
+}
+
+// ScheduleVIPAddressUpdates starts polling for updates to the set of instances registered with the
+// given Eureka VIP address, potentially filtered per the constraints supplied as options, using the
+// connection's configured polling interval as its period. It sends the outcome of each update
+// attempt to the returned channel, and continues until the supplied done channel is either closed
+// or has a value available. Once done sending updates to the returned channel, it closes it.
+//
+// If await is true, it sends at least one instance set update outcome to the returned channel
+// before returning.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) ScheduleVIPAddressUpdates(addr string, await bool, done <-chan struct{}, opts ...InstanceQueryOption) (<-chan InstanceSetUpdate, error) {
+	options, err := collectInstanceQueryOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	return e.scheduleVIPAddressUpdates(addr, await, done, options), nil
+}
+
+// ScheduleSecureVIPAddressUpdates starts polling for updates to the set of instances registered
+// with the given secure Eureka VIP address, potentially filtered per the constraints supplied as
+// options, using the connection's configured polling interval as its period. It sends the outcome
+// of each update attempt to the returned channel, and continues until the supplied done channel is
+// either closed or has a value available. Once done sending updates to the returned channel, it
+// closes it.
+//
+// If await is true, it sends at least one instance set update outcome to the returned channel
+// before returning.
+//
+// It returns an error if any of the supplied options are invalid, precluding it from scheduling the
+// intended updates.
+func (e *EurekaConnection) ScheduleSecureVIPAddressUpdates(addr string, await bool, done <-chan struct{}, opts ...InstanceQueryOption) (<-chan InstanceSetUpdate, error) {
+	options, err := mergeInstanceQueryOptions(instanceQueryOptions{secure: true}, opts)
+	if err != nil {
+		return nil, err
+	}
+	return e.scheduleVIPAddressUpdates(addr, await, done, options), nil
 }
 
 // RegisterInstance will register the given Instance with eureka if it is not already registered,

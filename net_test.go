@@ -86,7 +86,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 	Convey("A shuffling directive", t, func() {
 		Convey("using the global Rand instance", func() {
 			var opts instanceQueryOptions
-			err := Shuffled()(&opts)
+			err := Shuffled(&opts)
 			So(err, ShouldBeNil)
 			So(opts.intn, ShouldNotBeNil)
 			So(opts.intn(1), ShouldEqual, 0)
@@ -107,7 +107,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 func TestFilterInstancesInApps(t *testing.T) {
 	Convey("A predicate should preserve only those instances", t, func() {
 		Convey("with status UP", func() {
-			areUp := instancePredicateFrom(t, ThatAreUp())
+			areUp := instancePredicateFrom(t, ThatAreUp)
 			Convey("from an empty set of applications", func() {
 				So(filterInstancesInApps(nil, areUp), ShouldBeEmpty)
 			})
