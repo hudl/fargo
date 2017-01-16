@@ -27,6 +27,29 @@ func ExampleEurekaConnection_ScheduleAppUpdates() {
 	fmt.Printf("Done monitoring application %q.\n", name)
 }
 
+func ExampleEurekaConnection_ScheduleAppInstanceUpdates() {
+	e := makeConnection()
+	done := make(chan struct{})
+	time.AfterFunc(2*time.Minute, func() {
+		close(done)
+	})
+	name := "my_app"
+	updates, err := e.ScheduleAppInstanceUpdates(name, true, done, fargo.ThatAreUp, fargo.Shuffled)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("Monitoring instances of application %q.\n", name)
+	for update := range updates {
+		if update.Err != nil {
+			fmt.Printf("Most recent request for application %q failed: %v\n", name, update.Err)
+			continue
+		}
+		fmt.Printf("Application %q has %d instances available.\n", name, len(update.Instances))
+	}
+	fmt.Printf("Done monitoring instances of application %q.\n", name)
+}
+
 func ExampleAppSource_Latest() {
 	e := makeConnection()
 	name := "my_app"
@@ -34,7 +57,7 @@ func ExampleAppSource_Latest() {
 	defer source.Stop()
 	time.Sleep(30 * time.Second)
 	if app := source.Latest(); app != nil {
-		fmt.Printf("Application %q has %d instances\n.", name, len(app.Instances))
+		fmt.Printf("Application %q has %d instances.\n", name, len(app.Instances))
 	}
 	time.Sleep(time.Minute)
 	if app := source.Latest(); app == nil {
@@ -53,6 +76,6 @@ func ExampleAppSource_CopyLatestTo() {
 	}
 	time.Sleep(time.Minute)
 	if source.CopyLatestTo(&app) {
-		fmt.Printf("Application %q has %d instances\n.", name, len(app.Instances))
+		fmt.Printf("Application %q has %d instances.\n", name, len(app.Instances))
 	}
 }

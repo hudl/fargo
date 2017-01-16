@@ -103,20 +103,16 @@ type AppUpdate struct {
 	Err error
 }
 
-func sendAppUpdatesEvery(d time.Duration, produce func() AppUpdate, c chan<- AppUpdate, done <-chan struct{}) {
+func exchangeAppEvery(d time.Duration, produce func() (*Application, error), consume func(*Application, error), done <-chan struct{}) {
 	t := time.NewTicker(d)
 	defer t.Stop()
 	for {
 		select {
 		case <-done:
-			close(c)
 			return
 		case <-t.C:
-			// Drop attempted sends when the consumer hasn't received the last buffered update.
-			select {
-			case c <- produce():
-			default:
-			}
+			app, err := produce()
+			consume(app, err)
 		}
 	}
 }
@@ -130,21 +126,31 @@ func sendAppUpdatesEvery(d time.Duration, produce func() AppUpdate, c chan<- App
 // If await is true, it sends at least one application update outcome to the
 // returned channel before returning.
 func (e *EurekaConnection) ScheduleAppUpdates(name string, await bool, done <-chan struct{}) <-chan AppUpdate {
-	produce := func() AppUpdate {
-		app, err := e.GetApp(name)
-		return AppUpdate{app, err}
+	produce := func() (*Application, error) {
+		return e.GetApp(name)
 	}
 	c := make(chan AppUpdate, 1)
 	if await {
-		c <- produce()
+		app, err := produce()
+		c <- AppUpdate{app, err}
 	}
-	go sendAppUpdatesEvery(time.Duration(e.PollInterval)*time.Second, produce, c, done)
+	consume := func(app *Application, err error) {
+		// Drop attempted sends when the consumer hasn't received the last buffered update.
+		select {
+		case c <- AppUpdate{app, err}:
+		default:
+		}
+	}
+	go func() {
+		defer close(c)
+		exchangeAppEvery(e.PollInterval, produce, consume, done)
+	}()
 	return c
 }
 
 // An AppSource holds a periodically updated copy of a Eureka application.
 type AppSource struct {
-	m    *sync.RWMutex
+	m    sync.RWMutex
 	app  *Application
 	done chan<- struct{}
 }
@@ -155,31 +161,31 @@ type AppSource struct {
 //
 // If await is true, it waits for the first application update to complete
 // before returning, though it's possible that that first update attempt could
-// fail, so that a subsequent call to CopyLatestAppTo would return false.
+// fail, so that a subsequent call to Latest would return nil and CopyLatestTo
+// would return false.
 func (e *EurekaConnection) NewAppSource(name string, await bool) *AppSource {
 	done := make(chan struct{})
-	updates := e.ScheduleAppUpdates(name, await, done)
 	s := &AppSource{
 		done: done,
 	}
+	produce := func() (*Application, error) {
+		return e.GetApp(name)
+	}
 	if await {
-		if u := <-updates; u.Err != nil {
-			s.app = u.App
+		if app, err := produce(); err == nil {
+			s.app = app
 		}
 	}
-	go func() {
-		for u := range updates {
-			if u.Err != nil {
-				s.m.Lock()
-				s.app = u.App
-				s.m.Unlock()
-			}
-		}
-	}()
+	consume := func(app *Application, err error) {
+		s.m.Lock()
+		s.app = app
+		s.m.Unlock()
+	}
+	go exchangeAppEvery(e.PollInterval, produce, consume, done)
 	return s
 }
 
-// Latest returns the most recently acquired Eureke application, if any. If the
+// Latest returns the most recently acquired Eureka application, if any. If the
 // most recent update attempt failed, or if no update attempt has yet to
 // complete, it returns nil.
 func (s *AppSource) Latest() *Application {
