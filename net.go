@@ -316,16 +316,9 @@ func filterInstancesInApps(apps []*Application, pred func(*Instance) bool) []*In
 	}
 }
 
-type vipAddressKind bool
-
-const (
-	insecure vipAddressKind = false
-	secure   vipAddressKind = true
-)
-
-func (e *EurekaConnection) getInstancesByVIPAddress(addr string, kind vipAddressKind, opts instanceQueryOptions) ([]*Instance, error) {
+func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, opts instanceQueryOptions) ([]*Instance, error) {
 	var slug string
-	if kind == secure {
+	if secure {
 		slug = EurekaURLSlugs["InstancesBySecureVIPAddress"]
 	} else {
 		slug = EurekaURLSlugs["InstancesByVIPAddress"]
@@ -398,7 +391,7 @@ func (e *EurekaConnection) GetInstancesByVIPAddress(addr string, secure bool, op
 	if err != nil {
 		return nil, err
 	}
-	return e.getInstancesByVIPAddress(addr, vipAddressKind(secure), options)
+	return e.getInstancesByVIPAddress(addr, secure, options)
 }
 
 // InstanceSetUpdate is the outcome of an attempt to get a fresh snapshot of a Eureka VIP address's
@@ -443,9 +436,9 @@ func scheduleInstanceUpdates(d time.Duration, produce func() ([]*Instance, error
 	return c
 }
 
-func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, kind vipAddressKind, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
+func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, secure bool, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
 	produce := func() ([]*Instance, error) {
-		return e.getInstancesByVIPAddress(addr, kind, opts)
+		return e.getInstancesByVIPAddress(addr, secure, opts)
 	}
 	return scheduleInstanceUpdates(e.PollInterval, produce, await, done)
 }
@@ -467,7 +460,7 @@ func (e *EurekaConnection) ScheduleVIPAddressUpdates(addr string, secure bool, a
 	if err != nil {
 		return nil, err
 	}
-	return e.scheduleVIPAddressUpdates(addr, vipAddressKind(secure), await, done, options), nil
+	return e.scheduleVIPAddressUpdates(addr, secure, await, done, options), nil
 }
 
 func (e *EurekaConnection) makeInstanceProducerForApp(name string, opts []InstanceQueryOption) (func() ([]*Instance, error), error) {
@@ -557,9 +550,9 @@ func (e *EurekaConnection) newInstanceSetSourceFor(produce func() ([]*Instance, 
 	return s
 }
 
-func (e *EurekaConnection) newInstanceSetSourceForVIPAddress(addr string, kind vipAddressKind, await bool, opts instanceQueryOptions) *InstanceSetSource {
+func (e *EurekaConnection) newInstanceSetSourceForVIPAddress(addr string, secure bool, await bool, opts instanceQueryOptions) *InstanceSetSource {
 	produce := func() ([]*Instance, error) {
-		return e.getInstancesByVIPAddress(addr, kind, opts)
+		return e.getInstancesByVIPAddress(addr, secure, opts)
 	}
 	return e.newInstanceSetSourceFor(produce, await)
 }
@@ -580,7 +573,7 @@ func (e *EurekaConnection) NewInstanceSetSourceForVIPAddress(addr string, secure
 	if err != nil {
 		return nil, err
 	}
-	return e.newInstanceSetSourceForVIPAddress(addr, vipAddressKind(secure), await, options), nil
+	return e.newInstanceSetSourceForVIPAddress(addr, secure, await, options), nil
 }
 
 // NewInstanceSetSourceForApp returns a new InstantSetSource that offers a periodically updated set
