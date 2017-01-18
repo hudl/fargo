@@ -121,12 +121,12 @@ func TestGetInstancesByNonexistentVIPAddress(t *testing.T) {
 	for _, e.UseJson = range []bool{false, true} {
 		Convey("Get instances by VIP address", t, func() {
 			Convey("when the VIP address has no instances", func() {
-				instances, err := e.GetInstancesByVIPAddress("nonexistent")
+				instances, err := e.GetInstancesByVIPAddress("nonexistent", false)
 				So(err, ShouldBeNil)
 				So(instances, ShouldBeEmpty)
 			})
 			Convey("when the secure VIP address has no instances", func() {
-				instances, err := e.GetInstancesBySecureVIPAddress("nonexistent")
+				instances, err := e.GetInstancesByVIPAddress("nonexistent", true)
 				So(err, ShouldBeNil)
 				So(instances, ShouldBeEmpty)
 			})
@@ -144,12 +144,12 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 	for _, e.UseJson = range []bool{false, true} {
 		Convey("When the VIP address has one instance", t, withRegisteredInstance(&e, func(instance *fargo.Instance) {
 			time.Sleep(cacheDelay)
-			instances, err := e.GetInstancesByVIPAddress(vipAddress)
+			instances, err := e.GetInstancesByVIPAddress(vipAddress, false)
 			So(err, ShouldBeNil)
 			So(instances, ShouldHaveLength, 1)
 			So(instances[0].VipAddress, ShouldEqual, vipAddress)
 			Convey("requesting the instances by that VIP address with status UP should provide that one", func() {
-				instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp)
+				instances, err := e.GetInstancesByVIPAddress(vipAddress, false, fargo.ThatAreUp)
 				So(err, ShouldBeNil)
 				So(instances, ShouldHaveLength, 1)
 				So(instances[0].VipAddress, ShouldEqual, vipAddress)
@@ -160,7 +160,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 					So(err, ShouldBeNil)
 					Convey("selecting instances with that other status should provide that one", func() {
 						time.Sleep(cacheDelay)
-						instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.WithStatus(otherStatus))
+						instances, err := e.GetInstancesByVIPAddress(vipAddress, false, fargo.WithStatus(otherStatus))
 						So(err, ShouldBeNil)
 						So(instances, ShouldHaveLength, 1)
 						Convey("And selecting instances with status UP should provide none", func() {
@@ -177,7 +177,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 			Convey("requesting the instances by that VIP address should provide that one", func() {
 				time.Sleep(cacheDelay)
 				// Ensure that we tolerate a nil option safely.
-				instances, err := e.GetInstancesBySecureVIPAddress(vipAddress, nil)
+				instances, err := e.GetInstancesByVIPAddress(vipAddress, true, nil)
 				So(err, ShouldBeNil)
 				So(instances, ShouldHaveLength, 1)
 				So(instances[0].SecureVipAddress, ShouldEqual, vipAddress)

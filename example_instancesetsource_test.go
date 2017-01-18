@@ -12,7 +12,7 @@ import (
 func ExampleInstanceSetSource_Latest_outcomes() {
 	e := makeConnection()
 	vipAddress := "my_vip"
-	source, err := e.NewInstanceSetSourceForVIPAddress(vipAddress, false, fargo.ThatAreUp)
+	source, err := e.NewInstanceSetSourceForVIPAddress(vipAddress, false, false, fargo.ThatAreUp)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -36,7 +36,7 @@ func ExampleInstanceSetSource_Latest_outcomes() {
 func ExampleInstanceSetSource_Latest_compare() {
 	e := makeConnection()
 	svipAddress := "my_vip"
-	source, err := e.NewInstanceSetSourceForSecureVIPAddress(svipAddress, true, fargo.WithStatus(fargo.DOWN), fargo.WithStatus(fargo.OUTOFSERVICE))
+	source, err := e.NewInstanceSetSourceForVIPAddress(svipAddress, true, true, fargo.WithStatus(fargo.DOWN), fargo.WithStatus(fargo.OUTOFSERVICE))
 	if err != nil {
 		fmt.Println(err)
 		return
