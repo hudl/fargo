@@ -92,7 +92,9 @@ func TestConnectionCreation(t *testing.T) {
 		e := fargo.NewConnFromConfig(cfg)
 		apps, err := e.GetApps()
 		So(err, ShouldBeNil)
-		So(len(apps["EUREKA"].Instances), ShouldEqual, 2)
+		app := apps["EUREKA"]
+		So(app, ShouldNotBeNil)
+		So(len(app.Instances), ShouldEqual, 2)
 	})
 }
 
@@ -101,15 +103,18 @@ func TestGetApps(t *testing.T) {
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Pull applications", t, func() {
-			a, err := e.GetApps()
+			apps, err := e.GetApps()
 			So(err, ShouldBeNil)
-			So(len(a["EUREKA"].Instances), ShouldEqual, 2)
+			app := apps["EUREKA"]
+			So(app, ShouldNotBeNil)
+			So(len(app.Instances), ShouldEqual, 2)
 		})
 		Convey("Pull single application", t, func() {
-			a, err := e.GetApp("EUREKA")
+			app, err := e.GetApp("EUREKA")
 			So(err, ShouldBeNil)
-			So(len(a.Instances), ShouldEqual, 2)
-			for _, ins := range a.Instances {
+			So(app, ShouldNotBeNil)
+			So(len(app.Instances), ShouldEqual, 2)
+			for _, ins := range app.Instances {
 				So(ins.IPAddr, ShouldBeIn, []string{"172.17.0.2", "172.17.0.3"})
 			}
 		})
@@ -165,7 +170,7 @@ func TestGetSingleInstanceByVIPAddress(t *testing.T) {
 						So(instances, ShouldHaveLength, 1)
 						Convey("And selecting instances with status UP should provide none", func() {
 							// Ensure that we tolerate a nil option safely.
-							instances, err := e.GetInstancesByVIPAddress(vipAddress, fargo.ThatAreUp, nil)
+							instances, err := e.GetInstancesByVIPAddress(vipAddress, false, fargo.ThatAreUp, nil)
 							So(err, ShouldBeNil)
 							So(instances, ShouldBeEmpty)
 						})
@@ -199,7 +204,7 @@ func TestGetMultipleInstancesByVIPAddress(t *testing.T) {
 				Convey("requesting the instances by that VIP address should provide them", func() {
 					time.Sleep(cacheDelay)
 					vipAddress := "app"
-					instances, err := e.GetInstancesByVIPAddress(vipAddress)
+					instances, err := e.GetInstancesByVIPAddress(vipAddress, false)
 					So(err, ShouldBeNil)
 					So(instances, ShouldHaveLength, 2)
 					for _, ins := range instances {
@@ -218,6 +223,7 @@ func TestRegistration(t *testing.T) {
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
+		PortEnabled:      true,
 		App:              "TESTAPP",
 		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
@@ -231,6 +237,7 @@ func TestRegistration(t *testing.T) {
 			j := fargo.Instance{
 				HostName:         "i-6543",
 				Port:             9090,
+				PortEnabled:      true,
 				App:              "TESTAPP",
 				IPAddr:           "127.0.0.10",
 				VipAddress:       "127.0.0.10",
@@ -264,6 +271,7 @@ func TestReregistration(t *testing.T) {
 		i := fargo.Instance{
 			HostName:         "i-123456",
 			Port:             9090,
+			PortEnabled:      true,
 			App:              "TESTAPP",
 			IPAddr:           "127.0.0.10",
 			VipAddress:       "127.0.0.10",
@@ -276,25 +284,25 @@ func TestReregistration(t *testing.T) {
 			Convey("Instance registers correctly", func() {
 				err := e.RegisterInstance(&i)
 				So(err, ShouldBeNil)
-			})
-		})
 
-		Convey("Reregister the TESTAPP instance", t, func() {
-			Convey("Instance reregisters correctly", func() {
-				err := e.ReregisterInstance(&i)
-				So(err, ShouldBeNil)
-			})
+				Convey("Reregister the TESTAPP instance", func() {
+					Convey("Instance reregisters correctly", func() {
+						err := e.ReregisterInstance(&i)
+						So(err, ShouldBeNil)
 
-			Convey("Instance can check in", func() {
-				err := e.HeartBeatInstance(&i)
-				So(err, ShouldBeNil)
-			})
+						Convey("Instance can check in", func() {
+							err := e.HeartBeatInstance(&i)
+							So(err, ShouldBeNil)
+						})
 
-			Convey("Instance can be gotten correctly", func() {
-				ii, err := e.GetInstance(i.App, i.HostName)
-				So(err, ShouldBeNil)
-				So(ii.App, ShouldEqual, i.App)
-				So(ii.HostName, ShouldEqual, i.HostName)
+						Convey("Instance can be gotten correctly", func() {
+							ii, err := e.GetInstance(i.App, i.HostName)
+							So(err, ShouldBeNil)
+							So(ii.App, ShouldEqual, i.App)
+							So(ii.HostName, ShouldEqual, i.HostName)
+						})
+					})
+				})
 			})
 		})
 	}
@@ -305,6 +313,7 @@ func DontTestDeregistration(t *testing.T) {
 	i := fargo.Instance{
 		HostName:         "i-123456",
 		Port:             9090,
+		PortEnabled:      true,
 		App:              "TESTAPP",
 		IPAddr:           "127.0.0.10",
 		VipAddress:       "127.0.0.10",
@@ -366,6 +375,17 @@ func TestUpdateStatus(t *testing.T) {
 
 func TestMetadataReading(t *testing.T) {
 	e, _ := fargo.NewConnFromConfigFile("./config_sample/local.gcfg")
+	i := fargo.Instance{
+		HostName:         "i-123456",
+		Port:             9090,
+		PortEnabled:      true,
+		App:              "TESTAPP",
+		IPAddr:           "127.0.0.10",
+		VipAddress:       "127.0.0.10",
+		DataCenterInfo:   fargo.DataCenterInfo{Name: fargo.MyOwn},
+		SecureVipAddress: "127.0.0.10",
+		Status:           fargo.UP,
+	}
 	for _, j := range []bool{false, true} {
 		e.UseJson = j
 		Convey("Read empty instance metadata", t, func() {
@@ -375,19 +395,23 @@ func TestMetadataReading(t *testing.T) {
 			_, err = i.Metadata.GetString("SomeProp")
 			So(err, ShouldBeNil)
 		})
-		Convey("Read valid instance metadata", t, func() {
-			a, err := e.GetApp("TESTAPP")
-			So(err, ShouldBeNil)
-			So(len(a.Instances), ShouldBeGreaterThan, 0)
-			if len(a.Instances) == 0 {
-				return
-			}
-			i := a.Instances[0]
-			err = e.AddMetadataString(i, "SomeProp", "AValue")
-			So(err, ShouldBeNil)
-			v, err := i.Metadata.GetString("SomeProp")
-			So(err, ShouldBeNil)
-			So(v, ShouldEqual, "AValue")
+		Convey("Register an instance to TESTAPP", t, func() {
+			Convey("Instance registers correctly", func() {
+				err := e.RegisterInstance(&i)
+				So(err, ShouldBeNil)
+
+				Convey("Read valid instance metadata", func() {
+					a, err := e.GetApp("TESTAPP")
+					So(err, ShouldBeNil)
+					So(len(a.Instances), ShouldBeGreaterThan, 0)
+					i := a.Instances[0]
+					err = e.AddMetadataString(i, "SomeProp", "AValue")
+					So(err, ShouldBeNil)
+					v, err := i.Metadata.GetString("SomeProp")
+					So(err, ShouldBeNil)
+					So(v, ShouldEqual, "AValue")
+				})
+			})
 		})
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -658,11 +657,12 @@ func (e *EurekaConnection) ReregisterInstance(ins *Instance) error {
 	var out []byte
 	var err error
 	if e.UseJson {
-		ins.PortJ.Number = strconv.Itoa(ins.Port)
-		ins.SecurePortJ.Number = strconv.Itoa(ins.SecurePort)
 		out, err = e.marshal(&RegisterInstanceJson{ins})
 	} else {
 		out, err = e.marshal(ins)
+	}
+	if err != nil {
+		return err
 	}
 
 	body, rcode, err := postBody(reqURL, out, e.UseJson)

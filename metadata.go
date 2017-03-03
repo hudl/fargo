@@ -5,6 +5,7 @@ package fargo
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/clbanning/x2j"
 )
 
@@ -32,7 +33,6 @@ func (ins *Instance) SetMetadataString(key, value string) {
 func (im *InstanceMetadata) parse() error {
 	if len(im.Raw) == 0 {
 		im.parsed = make(map[string]interface{})
-		log.Debug("len(Metadata)==0. Quitting parsing.")
 		return nil
 	}
 	metadataLog.Debugf("InstanceMetadata.parse: %s", im.Raw)
