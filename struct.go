@@ -125,6 +125,9 @@ type AmazonMetadataType struct {
 	HostName         string `xml:"hostname" json:"hostname"`
 	AmiID            string `xml:"ami-id" json:"ami-id"`
 	InstanceType     string `xml:"instance-type" json:"instance-type"`
+	AccountId        string `xml:"accountId" json:"accountId"`
+	Mac              string `xml:"mac" json:"mac"`
+	VpcId            string `xml:"vpc-id" json:"vpc-id"`
 }
 
 // DataCenterInfo indicates which type of data center hosts this instance
