@@ -25,6 +25,9 @@ approximately 30 seconds later.
 
 If you are adding new packages to godep you may want to update the `hudloss/fargo` image first.
 
+# Logging
+To enable verbose logging, set the environment variable `FARGO_VERBOSE`
+
 # Known Issues
 
 Until [this PR](https://github.com/mitchellh/vagrant/pull/2742) is in an
