@@ -26,7 +26,8 @@ approximately 30 seconds later.
 If you are adding new packages to godep you may want to update the `hudloss/fargo` image first.
 
 # Logging
-To enable verbose logging, set the environment variable `FARGO_VERBOSE`
+To change the verbosity of fargo logging, set the environment variable FARGO_LOG_LEVEL to DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL
+INFO is the default.
 
 # Known Issues
 
