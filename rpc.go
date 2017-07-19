@@ -123,6 +123,6 @@ func netReq(req *http.Request) ([]byte, int, error) {
 		return nil, -1, err
 	}
 	// At this point we're done and shit worked, simply return the bytes
-	log.Infof("Got eureka response from url=%v", req.URL)
+	log.Debugf("Got eureka response from url=%v", req.URL)
 	return body, resp.StatusCode, nil
 }
