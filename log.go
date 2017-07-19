@@ -12,6 +12,7 @@ var log = logging.MustGetLogger("fargo")
 var metadataLog = logging.MustGetLogger("fargo.metadata")
 var marshalLog = logging.MustGetLogger("fargo.marshal")
 var logLevel = logging.INFO
+
 func init() {
 	switch levelOverride := strings.ToUpper(os.Getenv("FARGO_LOG_LEVEL")); levelOverride {
 		case "DEBUG":
