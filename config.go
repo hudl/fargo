@@ -39,6 +39,7 @@ type eureka struct {
 	PreferSameZone        bool     // default false
 	RegisterWithEureka    bool     // default false
 	Retries               int      // default 3
+	ServerContext         string   // default "eureka/v2"
 }
 
 // ReadConfig from a file location. Minimal error handling. Just bails and passes up
@@ -66,5 +67,8 @@ func (c *Config) fillDefaults() {
 	}
 	if c.Eureka.PollIntervalSeconds == 0 {
 		c.Eureka.PollIntervalSeconds = 30
+	}
+	if c.Eureka.ServerContext == "" {
+		c.Eureka.ServerContext = "eureka/v2"
 	}
 }

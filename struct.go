@@ -25,6 +25,7 @@ type EurekaConnection struct {
 	DNSDiscovery   bool
 	DiscoveryZone  string
 	discoveryTtl   chan struct{}
+	ServerContext  string
 	UseJson        bool
 }
 
