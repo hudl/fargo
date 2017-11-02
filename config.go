@@ -34,12 +34,12 @@ type eureka struct {
 	ServerDNSName         string   // default ""
 	ServiceUrls           []string // default []
 	ServerPort            int      // default 7001
+	ServerURLBase         string   // default "eureka/v2"
 	PollIntervalSeconds   int      // default 30
 	EnableDelta           bool     // TODO: Support querying for deltas
 	PreferSameZone        bool     // default false
 	RegisterWithEureka    bool     // default false
 	Retries               int      // default 3
-	ServerContext         string   // default "eureka/v2"
 }
 
 // ReadConfig from a file location. Minimal error handling. Just bails and passes up
@@ -68,7 +68,7 @@ func (c *Config) fillDefaults() {
 	if c.Eureka.PollIntervalSeconds == 0 {
 		c.Eureka.PollIntervalSeconds = 30
 	}
-	if c.Eureka.ServerContext == "" {
-		c.Eureka.ServerContext = "eureka/v2"
+	if len(c.Eureka.ServerURLBase) == 0 {
+		c.Eureka.ServerURLBase = "eureka/v2"
 	}
 }

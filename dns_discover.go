@@ -14,7 +14,7 @@ const azURL = "http://169.254.169.254/latest/meta-data/placement/availability-zo
 
 var ErrNotInAWS = fmt.Errorf("Not in AWS")
 
-func discoverDNS(domain string, port int, context string) (servers []string, ttl time.Duration, err error) {
+func discoverDNS(domain string, port int, urlBase string) (servers []string, ttl time.Duration, err error) {
 	r, _ := region()
 
 	// all DNS queries must use the FQDN
@@ -35,7 +35,7 @@ func discoverDNS(domain string, port int, context string) (servers []string, ttl
 		}
 		for _, instance := range instances {
 			// format the service URL
-			servers = append(servers, fmt.Sprintf("http://%s:%d/%s", instance, port, context))
+			servers = append(servers, fmt.Sprintf("http://%s:%d/%s", instance, port, urlBase))
 		}
 	}
 	return
