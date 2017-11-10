@@ -18,6 +18,7 @@ var EurekaURLSlugs = map[string]string{
 type EurekaConnection struct {
 	ServiceUrls    []string
 	ServicePort    int
+	ServerURLBase  string
 	Timeout        time.Duration
 	PollInterval   time.Duration
 	PreferSameZone bool
@@ -25,7 +26,6 @@ type EurekaConnection struct {
 	DNSDiscovery   bool
 	DiscoveryZone  string
 	discoveryTtl   chan struct{}
-	ServerURLBase  string
 	UseJson        bool
 }
 
