@@ -46,7 +46,7 @@ func TestGetNetflixTestDomain(t *testing.T) {
 		})
 	})
 	Convey("Autodiscover discoverytest.netflix.net.", t, func() {
-		servers, ttl, err := discoverDNS("discoverytest.netflix.net", 7001)
+		servers, ttl, err := discoverDNS("discoverytest.netflix.net", 7001, "")
 		So(ttl, ShouldEqual, 60*time.Second)
 		So(err, ShouldBeNil)
 		So(len(servers), ShouldEqual, 6)
