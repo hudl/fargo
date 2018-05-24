@@ -47,7 +47,7 @@ type eureka struct {
 func ReadConfig(loc string) (conf Config, err error) {
 	err = gcfg.ReadFileInto(&conf, loc)
 	if err != nil {
-		log.Criticalf("Unable to read config file Error: %s", err.Error())
+		log.Warningf("Unable to read config file Error: %s", err.Error())
 		return conf, err
 	}
 	conf.fillDefaults()
