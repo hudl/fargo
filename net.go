@@ -803,6 +803,9 @@ func (e *EurekaConnection) HeartBeatInstance(ins *Instance) error {
 }
 
 func (i *Instance) Id() string {
+	if i.InstanceId != "" {
+		return i.InstanceId
+	}
 	if i.UniqueID != nil {
 		return i.UniqueID(*i)
 	}
