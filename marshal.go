@@ -349,6 +349,7 @@ func (i *DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) erro
 	return e.EncodeToken(start.End())
 }
 
+// PreliminaryDataCenterInfo represents the initial datacenter info provided by eureka, before unmarshalling
 type PreliminaryDataCenterInfo struct {
 	Name     string      `xml:"name" json:"name"`
 	Class    string      `xml:"-" json:"@class"`
