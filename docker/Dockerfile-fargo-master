@@ -1,8 +1,10 @@
 FROM golang:1.12
 
-ENV GOROOT=/usr/local/go
+ENV GOPATH=/go
 
 RUN go get github.com/hudl/fargo
+
+ENV GO111MODULE=on
 
 WORKDIR /go/src/github.com/hudl/fargo/
 RUN go build
