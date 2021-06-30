@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/clbanning/x2j"
+	x2j "github.com/clbanning/mxj/x2j-wrapper"
 )
 
 // ParseAllMetadata iterates through all instances in an application
