@@ -4,10 +4,11 @@ package fargo
 
 import (
 	"fmt"
-	"github.com/cenkalti/backoff"
+	"time"
+
+	"github.com/cenkalti/backoff/v4"
 	"github.com/franela/goreq"
 	"github.com/miekg/dns"
-	"time"
 )
 
 const azURL = "http://169.254.169.254/latest/meta-data/placement/availability-zone"
