@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+    eureka1:
+        ports:
+            - "127.0.0.1:8081:8080"
+
+    eureka2:
+        ports:
+            - "127.0.0.1:8082:8080"

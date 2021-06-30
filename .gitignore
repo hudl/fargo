@@ -2,3 +2,5 @@
 eureka
 .vagrant/
 .idea/
+
+/docker-compose.override.yml

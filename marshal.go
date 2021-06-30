@@ -349,7 +349,7 @@ func (i *DataCenterInfo) MarshalXML(e *xml.Encoder, start xml.StartElement) erro
 	return e.EncodeToken(start.End())
 }
 
-type preliminaryDataCenterInfo struct {
+type PreliminaryDataCenterInfo struct {
 	Name     string      `xml:"name" json:"name"`
 	Class    string      `xml:"-" json:"@class"`
 	Metadata metadataMap `xml:"metadata" json:"metadata"`
@@ -377,7 +377,7 @@ func populateAmazonMetadata(dst *AmazonMetadataType, src map[string]string) {
 	bindValue(&dst.InstanceType, src, "instance-type")
 }
 
-func adaptDataCenterInfo(dst *DataCenterInfo, src *preliminaryDataCenterInfo) {
+func adaptDataCenterInfo(dst *DataCenterInfo, src *PreliminaryDataCenterInfo) {
 	dst.Name = src.Name
 	dst.Class = src.Class
 	if src.Name == Amazon {
@@ -390,7 +390,7 @@ func adaptDataCenterInfo(dst *DataCenterInfo, src *preliminaryDataCenterInfo) {
 // UnmarshalXML is a custom XML unmarshaler for DataCenterInfo, populating either Metadata or AlternateMetadata
 // depending on the type of data center indicated by the Name.
 func (i *DataCenterInfo) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	p := preliminaryDataCenterInfo{
+	p := PreliminaryDataCenterInfo{
 		Metadata: make(map[string]string, 11),
 	}
 	if err := d.DecodeElement(&p, &start); err != nil {
@@ -453,7 +453,7 @@ func (i *DataCenterInfo) UnmarshalJSON(b []byte) error {
 	// The Eureka server will mistakenly convert metadata values that look like numbers to JSON numbers.
 	// Convert them back to strings.
 	aux := struct {
-		*preliminaryDataCenterInfo
+		*PreliminaryDataCenterInfo
 		PreliminaryMetadata map[string]interface{} `json:"metadata"`
 	}{
 		PreliminaryMetadata: make(map[string]interface{}, 11),
@@ -466,6 +466,6 @@ func (i *DataCenterInfo) UnmarshalJSON(b []byte) error {
 		metadata[k] = jsonValueAsString(v)
 	}
 	aux.Metadata = metadata
-	adaptDataCenterInfo(i, aux.preliminaryDataCenterInfo)
+	adaptDataCenterInfo(i, aux.PreliminaryDataCenterInfo)
 	return nil
 }
