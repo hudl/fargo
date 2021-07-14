@@ -3,9 +3,10 @@ package fargo
 // MIT Licensed (see README.md) - Copyright (c) 2013 Hudl <@Hudl>
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGetNXDomain(t *testing.T) {
@@ -17,6 +18,8 @@ func TestGetNXDomain(t *testing.T) {
 }
 
 func TestGetNetflixTestDomain(t *testing.T) {
+	t.Skip("netflix domain discovery doesn't work")
+
 	Convey("Given domain txt.us-east-1.discoverytest.netflix.net.", t, func() {
 		// TODO: use a mock DNS server to eliminate dependency on netflix
 		// keeping their discoverytest domain up

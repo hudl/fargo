@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+    eureka1:
+        build:
+            dockerfile: Dockerfile-v${EUREKA_VERSION:-1.1.147}
+            context: docker/
+        volumes:
+            - $PWD/docker/eureka-client-test-docker.properties:/tomcat/webapps/eureka/WEB-INF/classes/eureka-client-test.properties
+
+    eureka2:
+        build:
+            dockerfile: Dockerfile-v${EUREKA_VERSION:-1.1.147}
+            context: docker/
+        volumes:
+            - $PWD/docker/eureka-client-test-docker.properties:/tomcat/webapps/eureka/WEB-INF/classes/eureka-client-test.properties

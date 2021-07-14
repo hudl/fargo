@@ -1,0 +1,3 @@
+[Eureka]
+ServiceUrls = http://127.0.0.1:8081/eureka/v2
+ConnectTimeoutSeconds = 2

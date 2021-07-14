@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/clbanning/x2j"
+	x2j "github.com/clbanning/mxj/x2j-wrapper"
 )
 
 // ParseAllMetadata iterates through all instances in an application
@@ -32,7 +32,9 @@ func (ins *Instance) SetMetadataString(key, value string) {
 
 func (im *InstanceMetadata) parse() error {
 	if len(im.Raw) == 0 {
-		im.parsed = make(map[string]interface{})
+		if im.parsed == nil {
+			im.parsed = make(map[string]interface{})
+		}
 		return nil
 	}
 	metadataLog.Debugf("InstanceMetadata.parse: %s", im.Raw)

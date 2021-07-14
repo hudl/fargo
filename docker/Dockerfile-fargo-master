@@ -1,9 +1,9 @@
-FROM golang:1.6
-
-ENV GOROOT=/usr/local/go
+FROM golang:1.16
 
 RUN go get github.com/tools/godep
-RUN go get github.com/hudl/fargo
 
-WORKDIR /go/src/github.com/hudl/fargo/
-RUN godep restore
+RUN git clone https://github.com/hudl/fargo.git /usr/local/src/fargo
+
+WORKDIR /usr/local/src/fargo
+
+RUN go mod download
