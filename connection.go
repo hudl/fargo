@@ -91,7 +91,7 @@ func (e *EurekaConnection) UpdateApp(app *Application) {
 			if err != nil {
 				log.Errorf("Failure updating %s in goroutine", app.Name)
 			}
-			<-time.After(time.Duration(e.PollInterval) * time.Second)
+			<-time.After(e.PollInterval)
 		}
 	}()
 }
