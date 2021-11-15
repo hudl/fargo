@@ -10,7 +10,7 @@ import (
 )
 
 func instancePredicateFrom(t *testing.T, opts ...InstanceQueryOption) func(*Instance) bool {
-	var mergedOptions instanceQueryOptions
+	var mergedOptions InstanceQueryOptions
 	for _, o := range opts {
 		if err := o(&mergedOptions); err != nil {
 			t.Fatal(err)
@@ -44,7 +44,7 @@ func (s *countingSource) Reset() {
 func TestInstanceQueryOptions(t *testing.T) {
 	Convey("A status predicate", t, func() {
 		Convey("mandates a nonempty status", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := WithStatus("")(&opts)
 			So(err, ShouldNotBeNil)
 			So(opts.predicate, ShouldBeNil)
@@ -53,7 +53,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 			return pred(&Instance{Status: status})
 		}
 		Convey("matches a single status", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			desiredStatus := UNKNOWN
 			err := WithStatus(desiredStatus)(&opts)
 			So(err, ShouldBeNil)
@@ -66,7 +66,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 			}
 		})
 		Convey("matches a set of states", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			desiredStates := []StatusType{DOWN, OUTOFSERVICE}
 			for _, status := range desiredStates {
 				err := WithStatus(status)(&opts)
@@ -85,7 +85,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 	})
 	Convey("A shuffling directive", t, func() {
 		Convey("using the global Rand instance", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := Shuffled(&opts)
 			So(err, ShouldBeNil)
 			So(opts.intn, ShouldNotBeNil)
@@ -93,7 +93,7 @@ func TestInstanceQueryOptions(t *testing.T) {
 		})
 		Convey("using a specific Rand instance", func() {
 			source := countingSource{}
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := ShuffledWith(rand.New(&source))(&opts)
 			So(err, ShouldBeNil)
 			So(opts.intn, ShouldNotBeNil)
@@ -213,6 +213,7 @@ func TestFilterInstancesInApps(t *testing.T) {
 		})
 	})
 }
+
 // Preclude compiler optimization eliding the filter procedure.
 var filterBenchmarkResult []*Instance
 

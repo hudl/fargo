@@ -129,7 +129,7 @@ func instanceCount(apps []*Application) int {
 	return count
 }
 
-type instanceQueryOptions struct {
+type InstanceQueryOptions struct {
 	// predicate guides filtering, indicating whether to retain an instance when it returns true or
 	// drop it when it returns false.
 	predicate func(*Instance) bool
@@ -140,9 +140,9 @@ type instanceQueryOptions struct {
 
 // InstanceQueryOption is a customization supplied to instance query functions like
 // GetInstancesByVIPAddress to tailor the set of instances returned.
-type InstanceQueryOption func(*instanceQueryOptions) error
+type InstanceQueryOption func(*InstanceQueryOptions) error
 
-func retainIfStatusIs(status StatusType, o *instanceQueryOptions) {
+func retainIfStatusIs(status StatusType, o *InstanceQueryOptions) {
 	if prev := o.predicate; prev != nil {
 		o.predicate = func(instance *Instance) bool {
 			return prev(instance) || instance.Status == status
@@ -158,7 +158,7 @@ func retainIfStatusIs(status StatusType, o *instanceQueryOptions) {
 //
 // Supplying multiple options produced by this function applies their logical disjunction.
 func WithStatus(status StatusType) InstanceQueryOption {
-	return func(o *instanceQueryOptions) error {
+	return func(o *InstanceQueryOptions) error {
 		if len(status) == 0 {
 			return errors.New("invalid instance status")
 		}
@@ -171,14 +171,14 @@ func WithStatus(status StatusType) InstanceQueryOption {
 //
 // Combining this function with the options produced by WithStatus applies their logical
 // disjunction.
-func ThatAreUp(o *instanceQueryOptions) error {
+func ThatAreUp(o *InstanceQueryOptions) error {
 	retainIfStatusIs(UP, o)
 	return nil
 }
 
 // Shuffled requests randomizing the order of the sequence of instances returned, using the default
 // shared rand.Source.
-func Shuffled(o *instanceQueryOptions) error {
+func Shuffled(o *InstanceQueryOptions) error {
 	o.intn = rand.Intn
 	return nil
 }
@@ -186,7 +186,7 @@ func Shuffled(o *instanceQueryOptions) error {
 // ShuffledWith requests randomizing the order of the sequence of instances returned, using the
 // supplied source of random numbers.
 func ShuffledWith(r *rand.Rand) InstanceQueryOption {
-	return func(o *instanceQueryOptions) error {
+	return func(o *InstanceQueryOptions) error {
 		o.intn = r.Intn
 		return nil
 	}
@@ -315,7 +315,7 @@ func filterInstancesInApps(apps []*Application, pred func(*Instance) bool) []*In
 	}
 }
 
-func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, opts instanceQueryOptions) ([]*Instance, error) {
+func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, opts InstanceQueryOptions) ([]*Instance, error) {
 	var slug string
 	if secure {
 		slug = EurekaURLSlugs["InstancesBySecureVIPAddress"]
@@ -365,19 +365,19 @@ func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, op
 	return instances, nil
 }
 
-func mergeInstanceQueryOptions(defaults instanceQueryOptions, opts []InstanceQueryOption) (instanceQueryOptions, error) {
+func mergeInstanceQueryOptions(defaults InstanceQueryOptions, opts []InstanceQueryOption) (InstanceQueryOptions, error) {
 	for _, o := range opts {
 		if o != nil {
 			if err := o(&defaults); err != nil {
-				return instanceQueryOptions{}, err
+				return InstanceQueryOptions{}, err
 			}
 		}
 	}
 	return defaults, nil
 }
 
-func collectInstanceQueryOptions(opts []InstanceQueryOption) (instanceQueryOptions, error) {
-	return mergeInstanceQueryOptions(instanceQueryOptions{}, opts)
+func collectInstanceQueryOptions(opts []InstanceQueryOption) (InstanceQueryOptions, error) {
+	return mergeInstanceQueryOptions(InstanceQueryOptions{}, opts)
 }
 
 // GetInstancesByVIPAddress returns the set of instances registered with the given VIP address,
@@ -435,7 +435,7 @@ func scheduleInstanceUpdates(d time.Duration, produce func() ([]*Instance, error
 	return c
 }
 
-func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, secure bool, await bool, done <-chan struct{}, opts instanceQueryOptions) <-chan InstanceSetUpdate {
+func (e *EurekaConnection) scheduleVIPAddressUpdates(addr string, secure bool, await bool, done <-chan struct{}, opts InstanceQueryOptions) <-chan InstanceSetUpdate {
 	produce := func() ([]*Instance, error) {
 		return e.getInstancesByVIPAddress(addr, secure, opts)
 	}
@@ -549,7 +549,7 @@ func (e *EurekaConnection) newInstanceSetSourceFor(produce func() ([]*Instance, 
 	return s
 }
 
-func (e *EurekaConnection) newInstanceSetSourceForVIPAddress(addr string, secure bool, await bool, opts instanceQueryOptions) *InstanceSetSource {
+func (e *EurekaConnection) newInstanceSetSourceForVIPAddress(addr string, secure bool, await bool, opts InstanceQueryOptions) *InstanceSetSource {
 	produce := func() ([]*Instance, error) {
 		return e.getInstancesByVIPAddress(addr, secure, opts)
 	}
