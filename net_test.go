@@ -10,16 +10,16 @@ import (
 )
 
 func instancePredicateFrom(t *testing.T, opts ...InstanceQueryOption) func(*Instance) bool {
-	var mergedOptions instanceQueryOptions
+	var mergedOptions InstanceQueryOptions
 	for _, o := range opts {
 		if err := o(&mergedOptions); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if pred := mergedOptions.predicate; pred != nil {
+	if pred := mergedOptions.Predicate; pred != nil {
 		return pred
 	}
-	t.Fatal("no predicate available")
+	t.Fatal("no Predicate available")
 	panic("unreachable")
 }
 
@@ -42,22 +42,22 @@ func (s *countingSource) Reset() {
 }
 
 func TestInstanceQueryOptions(t *testing.T) {
-	Convey("A status predicate", t, func() {
+	Convey("A status Predicate", t, func() {
 		Convey("mandates a nonempty status", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := WithStatus("")(&opts)
 			So(err, ShouldNotBeNil)
-			So(opts.predicate, ShouldBeNil)
+			So(opts.Predicate, ShouldBeNil)
 		})
 		matchesStatus := func(pred func(*Instance) bool, status StatusType) bool {
 			return pred(&Instance{Status: status})
 		}
 		Convey("matches a single status", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			desiredStatus := UNKNOWN
 			err := WithStatus(desiredStatus)(&opts)
 			So(err, ShouldBeNil)
-			pred := opts.predicate
+			pred := opts.Predicate
 			So(pred, ShouldNotBeNil)
 			So(matchesStatus(pred, desiredStatus), ShouldBeTrue)
 			for _, status := range []StatusType{UP, DOWN, STARTING, OUTOFSERVICE} {
@@ -66,13 +66,13 @@ func TestInstanceQueryOptions(t *testing.T) {
 			}
 		})
 		Convey("matches a set of states", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			desiredStates := []StatusType{DOWN, OUTOFSERVICE}
 			for _, status := range desiredStates {
 				err := WithStatus(status)(&opts)
 				So(err, ShouldBeNil)
 			}
-			pred := opts.predicate
+			pred := opts.Predicate
 			So(pred, ShouldNotBeNil)
 			for _, status := range desiredStates {
 				So(matchesStatus(pred, status), ShouldBeTrue)
@@ -85,27 +85,27 @@ func TestInstanceQueryOptions(t *testing.T) {
 	})
 	Convey("A shuffling directive", t, func() {
 		Convey("using the global Rand instance", func() {
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := Shuffled(&opts)
 			So(err, ShouldBeNil)
-			So(opts.intn, ShouldNotBeNil)
-			So(opts.intn(1), ShouldEqual, 0)
+			So(opts.Intn, ShouldNotBeNil)
+			So(opts.Intn(1), ShouldEqual, 0)
 		})
 		Convey("using a specific Rand instance", func() {
 			source := countingSource{}
-			var opts instanceQueryOptions
+			var opts InstanceQueryOptions
 			err := ShuffledWith(rand.New(&source))(&opts)
 			So(err, ShouldBeNil)
-			So(opts.intn, ShouldNotBeNil)
+			So(opts.Intn, ShouldNotBeNil)
 			So(source.callCount, ShouldEqual, 0)
-			So(opts.intn(2), ShouldEqual, 0)
+			So(opts.Intn(2), ShouldEqual, 0)
 			So(source.callCount, ShouldEqual, 1)
 		})
 	})
 }
 
 func TestFilterInstancesInApps(t *testing.T) {
-	Convey("A predicate should preserve only those instances", t, func() {
+	Convey("A Predicate should preserve only those instances", t, func() {
 		Convey("with status UP", func() {
 			areUp := instancePredicateFrom(t, ThatAreUp)
 			Convey("from an empty set of applications", func() {
@@ -213,6 +213,7 @@ func TestFilterInstancesInApps(t *testing.T) {
 		})
 	})
 }
+
 // Preclude compiler optimization eliding the filter procedure.
 var filterBenchmarkResult []*Instance
 
