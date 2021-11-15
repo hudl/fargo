@@ -130,12 +130,12 @@ func instanceCount(apps []*Application) int {
 }
 
 type InstanceQueryOptions struct {
-	// predicate guides filtering, indicating whether to retain an instance when it returns true or
+	// Predicate guides filtering, indicating whether to retain an instance when it returns true or
 	// drop it when it returns false.
-	predicate func(*Instance) bool
-	// intn behaves like the rand.Rand.Intn function, aiding in randomizing the order of the result
+	Predicate func(*Instance) bool
+	// Intn behaves like the rand.Rand.Intn function, aiding in randomizing the order of the result
 	// sequence when non-nil.
-	intn func(int) int
+	Intn func(int) int
 }
 
 // InstanceQueryOption is a customization supplied to instance query functions like
@@ -143,12 +143,12 @@ type InstanceQueryOptions struct {
 type InstanceQueryOption func(*InstanceQueryOptions) error
 
 func retainIfStatusIs(status StatusType, o *InstanceQueryOptions) {
-	if prev := o.predicate; prev != nil {
-		o.predicate = func(instance *Instance) bool {
+	if prev := o.Predicate; prev != nil {
+		o.Predicate = func(instance *Instance) bool {
 			return prev(instance) || instance.Status == status
 		}
 	} else {
-		o.predicate = func(instance *Instance) bool {
+		o.Predicate = func(instance *Instance) bool {
 			return instance.Status == status
 		}
 	}
@@ -179,7 +179,7 @@ func ThatAreUp(o *InstanceQueryOptions) error {
 // Shuffled requests randomizing the order of the sequence of instances returned, using the default
 // shared rand.Source.
 func Shuffled(o *InstanceQueryOptions) error {
-	o.intn = rand.Intn
+	o.Intn = rand.Intn
 	return nil
 }
 
@@ -187,7 +187,7 @@ func Shuffled(o *InstanceQueryOptions) error {
 // supplied source of random numbers.
 func ShuffledWith(r *rand.Rand) InstanceQueryOption {
 	return func(o *InstanceQueryOptions) error {
-		o.intn = r.Intn
+		o.Intn = r.Intn
 		return nil
 	}
 }
@@ -208,14 +208,14 @@ func shuffleInstances(instances []*Instance, intn func(int) int) {
 }
 
 // filterInstances returns a filtered subset of the supplied sequence of instances, retaining only those
-// instances for which the supplied predicate function returns true. It returns the retained instances in
+// instances for which the supplied Predicate function returns true. It returns the retained instances in
 // the same order the occurred in the input sequence. Note that the returned slice may share storage with
 // the input sequence.
 //
 // The filtering algorithm is arguably baroque, in the interest of efficiency: namely, eliminating
 // allocation and copying when we can avoid it. We only need to allocate and copy elements of the
 // input sequence when the result sequence contains at least two nonadjacent subsequences of the
-// input sequence. That is, if the predicate is, say, retaining only instances with status "UP", we
+// input sequence. That is, if the Predicate is, say, retaining only instances with status "UP", we
 // can avoid copying elements and instead return a subsequence of the input sequence in the
 // following cases (where "U" indicates an instance with status "UP", "d" with status "DOWN"):
 //
@@ -265,7 +265,7 @@ func shuffleInstances(instances []*Instance, intn func(int) int) {
 //       Continue collecting any remaining retained elements into the array.
 //       Return the populated subsequence of the array.
 //
-// The algorithm evaluates the predicate exactly once for each element of the input sequence.
+// The algorithm evaluates the Predicate exactly once for each element of the input sequence.
 func filterInstances(instances []*Instance, pred func(*Instance) bool) []*Instance {
 	for firstBegin, instance := range instances {
 		if !pred(instance) {
@@ -344,7 +344,7 @@ func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, op
 		return nil, err
 	}
 	var instances []*Instance
-	if pred := opts.predicate; pred != nil {
+	if pred := opts.Predicate; pred != nil {
 		instances = filterInstancesInApps(r.Applications, pred)
 	} else {
 		switch len(r.Applications) {
@@ -359,7 +359,7 @@ func (e *EurekaConnection) getInstancesByVIPAddress(addr string, secure bool, op
 			}
 		}
 	}
-	if intn := opts.intn; intn != nil {
+	if intn := opts.Intn; intn != nil {
 		shuffleInstances(instances, intn)
 	}
 	return instances, nil
@@ -467,8 +467,8 @@ func (e *EurekaConnection) makeInstanceProducerForApp(name string, opts []Instan
 	if err != nil {
 		return nil, err
 	}
-	predicate := options.predicate
-	intn := options.intn
+	predicate := options.Predicate
+	intn := options.Intn
 	return func() ([]*Instance, error) {
 		app, err := e.GetApp(name)
 		if err != nil {
@@ -520,7 +520,7 @@ func (e *EurekaConnection) newInstanceSetSourceFor(produce func() ([]*Instance, 
 	}
 	// NB: If an application contained no instances, such that it either lacked the "instance" field
 	// entirely or had it present but with a "null" value, or none of the present instances
-	// satisfied the filtering predicate, then it's possible that the slice returned by
+	// satisfied the filtering Predicate, then it's possible that the slice returned by
 	// getInstancesByVIPAddress (or similar) will be nil. Make it possible to discern when we've
 	// received at least one update in Latest by never storing a nil value for a successful update.
 	if await {
