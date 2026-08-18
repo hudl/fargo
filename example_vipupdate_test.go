@@ -56,7 +56,7 @@ func ExampleEurekaConnection_ScheduleVIPAddressUpdates_context() {
 	fmt.Printf("Done monitoring VIP address %q.\n", vipAddress)
 }
 
-func ExampleEurekaConnection_ScheduleSecureVIPAddressUpdates_context() {
+func ExampleEurekaConnection_ScheduleVIPAddressUpdates_secure() {
 	e := makeConnection()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
